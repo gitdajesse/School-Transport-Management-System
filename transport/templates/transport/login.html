@@ -1,0 +1,27 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Login Page
+{% endblock %}
+
+{% block body %}
+    <h1>
+        Login
+    </h1>
+
+    <form method = "POST">
+        <div>
+            <label>
+                Username:
+                <input type = "text" placeholder = "Username">
+            </label>
+        </div>
+        <div>
+            <label>
+                Password:
+                <input type = "password" placeholder = "Enter password">
+            </label>
+        </div>
+        <input type = "submit" value = "Login">
+    </form>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Register Page
+{% endblock %}
+
+{% block body %}
+    <h1>
+        Register
+    </h1>
+
+    <!-- Drop Down Menu -->
+    <label for = "formSelector">
+        Choose an Option:
+    </label>
+    <select id = "formSelector">
+        <option value = "">
+            -- Select an Option --
+        </option>
+        <option value = "admin">
+            Admin
+        </option>
+        <option value = "parent">
+            Parent
+        </option>
+        <option value = "assistant">
+            Assistant
+        </option>
+    </select>
+
+    <div id = "formConatiner">
+        <!-- Form for admin-->
+        <form id = "form-admin" class = "dynamic-form" style = "display: none;" method = "POST">
+            <h3>
+                Admin Information
+            </h3>
+
+            <div>
+                <label>
+                    Full Name:
+                    <input type = "text" placeholder = "Full Name">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Username:
+                    <input type = "text" placeholder = "Username">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Email Address:
+                    <input type = "email" placeholder = "Email Address">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Password:
+                    <input type = "password" placeholder = "Enter password">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Confirm Password:
+                    <input type = "password" placeholder = "Confirm password">
+                </label>
+            </div>
+
+            <input type = "submit" value = "Register">
+        </form>
+
+        <!-- Form for parent-->
+        <form id = "form-parent" class = "dynamic-form" style = "display: none;" method = "POST">
+            <h3>
+                Parent Information
+            </h3>
+
+            <div>
+                <label>
+                    Full Name:
+                    <input type = "text" placeholder = "Full Name">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Username:
+                    <input type = "text" placeholder = "Username">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Email Address:
+                    <input type = "email" placeholder = "Email Address">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Home Address:
+                    <input type = "email" placeholder = "Home Address">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Phone Number:
+                    <input type = "number" placeholder = "Phone Number">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Password:
+                    <input type = "password" placeholder = "Enter password">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Confirm Password:
+                    <input type = "password" placeholder = "Confirm password">
+                </label>
+            </div>
+
+            <input type = "submit" value = "Register">
+        </form>
+
+        <!-- Form for assistant-->
+        <form id = "form-assistant" class = "dynamic-form" style = "display: none;" method = "POST">
+            <h3>
+                Assistant Information
+            </h3>
+
+            <div>
+                <label>
+                    Full Name:
+                    <input type = "text" placeholder = "Full Name">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Username:
+                    <input type = "text" placeholder = "Username">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Password:
+                    <input type = "password" placeholder = "Enter password">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Confirm Password:
+                    <input type = "password" placeholder = "Confirm password">
+                </label>
+            </div>
+
+            <input type = "submit" value = "Register">
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropdown = document.getElementById('formSelector');
+            const allForms = document.querySelectorAll('.dynamic-form');
+
+            dropdown.addEventListener('change', function() {
+                allForms.forEach(form => {
+                    form.style.display = 'none';
+                });
+
+                const selectedValue = this.value;
+
+                if (selectedValue) {
+                    const targetForm = document.getElementById(`form-${selectedValue}`)
+
+                    if (targetForm) {
+                        targetForm.style.display = 'block';
+                    }
+                }
+            });
+        });
+
+
+    </script>
+{% endblock %}
