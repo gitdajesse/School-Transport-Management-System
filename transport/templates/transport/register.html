@@ -13,7 +13,7 @@
     <label for = "formSelector">
         Choose an Option:
     </label>
-    <select id = "formSelector">
+    <select id = "formSelector" name = "user_type">
         <option value = "">
             -- Select an Option --
         </option>
@@ -30,43 +30,53 @@
 
     <div id = "formConatiner">
         <!-- Form for admin-->
-        <form id = "form-admin" class = "dynamic-form" style = "display: none;" method = "POST">
+        <form id = "form-admin" class = "dynamic-form" style = "display: none;" method = "POST" action = "{% url 'register' %}">
+            {% csrf_token %}
             <h3>
                 Admin Information
             </h3>
 
+            <input type = "hidden" name = "user_type" value = "admin">
+
             <div>
                 <label>
                     Full Name:
-                    <input type = "text" placeholder = "Full Name">
+                    <input type = "text" name = "full_name" placeholder = "Full Name">
                 </label>
             </div>
 
             <div>
                 <label>
                     Username:
-                    <input type = "text" placeholder = "Username">
+                    <input type = "text" name = "username" placeholder = "Username">
                 </label>
             </div>
 
             <div>
                 <label>
                     Email Address:
-                    <input type = "email" placeholder = "Email Address">
+                    <input type = "email" name = "email" placeholder = "Email Address">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Phone Number:
+                    <input type = "tel" name = "phone_number" placeholder = "Phone Number">
                 </label>
             </div>
 
             <div>
                 <label>
                     Password:
-                    <input type = "password" placeholder = "Enter password">
+                    <input type = "password" name = "password" placeholder = "Enter password">
                 </label>
             </div>
 
             <div>
                 <label>
                     Confirm Password:
-                    <input type = "password" placeholder = "Confirm password">
+                    <input type = "password" name = "confirm_password" placeholder = "Confirm password">
                 </label>
             </div>
 
@@ -74,57 +84,60 @@
         </form>
 
         <!-- Form for parent-->
-        <form id = "form-parent" class = "dynamic-form" style = "display: none;" method = "POST">
+        <form id = "form-parent" class = "dynamic-form" style = "display: none;" method = "POST" action = "{% url 'register' %}">
+            {% csrf_token %}
             <h3>
                 Parent Information
             </h3>
 
+            <input type = "hidden" name = "user_type" value = "parent">
+
             <div>
                 <label>
                     Full Name:
-                    <input type = "text" placeholder = "Full Name">
+                    <input type = "text" name = "full_name" placeholder = "Full Name">
                 </label>
             </div>
 
             <div>
                 <label>
                     Username:
-                    <input type = "text" placeholder = "Username">
+                    <input type = "text" name = "username" placeholder = "Username">
                 </label>
             </div>
 
             <div>
                 <label>
                     Email Address:
-                    <input type = "email" placeholder = "Email Address">
+                    <input type = "email" name = "email" placeholder = "Email Address">
                 </label>
             </div>
 
             <div>
                 <label>
                     Home Address:
-                    <input type = "email" placeholder = "Home Address">
+                    <input type = "text" name = "home_address" placeholder = "Home Address">
                 </label>
             </div>
 
             <div>
                 <label>
                     Phone Number:
-                    <input type = "number" placeholder = "Phone Number">
+                    <input type = "tel" name = "phone_number" placeholder = "Phone Number">
                 </label>
             </div>
 
             <div>
                 <label>
                     Password:
-                    <input type = "password" placeholder = "Enter password">
+                    <input type = "password" name = "password" placeholder = "Enter password">
                 </label>
             </div>
 
             <div>
                 <label>
                     Confirm Password:
-                    <input type = "password" placeholder = "Confirm password">
+                    <input type = "password" name = "confirm_password" placeholder = "Confirm password">
                 </label>
             </div>
 
@@ -132,36 +145,53 @@
         </form>
 
         <!-- Form for assistant-->
-        <form id = "form-assistant" class = "dynamic-form" style = "display: none;" method = "POST">
+        <form id = "form-assistant" class = "dynamic-form" style = "display: none;" method = "POST" action = "{% url 'register' %}">
+            {% csrf_token %}
             <h3>
                 Assistant Information
             </h3>
 
+            <input type = "hidden" name = "user_type" value = "assistant">
+
             <div>
                 <label>
                     Full Name:
-                    <input type = "text" placeholder = "Full Name">
+                    <input type = "text" name = "full_name" placeholder = "Full Name">
                 </label>
             </div>
 
             <div>
                 <label>
                     Username:
-                    <input type = "text" placeholder = "Username">
+                    <input type = "text" name = "username" placeholder = "Username">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Email Address:
+                    <input type = "email" name = "email" placeholder = "Email Address">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    Phone Number:
+                    <input type = "tel" name = "phone_number" placeholder = "Phone Number">
                 </label>
             </div>
 
             <div>
                 <label>
                     Password:
-                    <input type = "password" placeholder = "Enter password">
+                    <input type = "password" name = "password" placeholder = "Enter password">
                 </label>
             </div>
 
             <div>
                 <label>
                     Confirm Password:
-                    <input type = "password" placeholder = "Confirm password">
+                    <input type = "password" name = "confirm_password" placeholder = "Confirm password">
                 </label>
             </div>
 

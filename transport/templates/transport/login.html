@@ -9,19 +9,27 @@
         Login
     </h1>
 
-    <form method = "POST">
+    <form method = "POST" action = "{% url 'login' %}">
+        {% csrf_token %}
         <div>
             <label>
                 Username:
-                <input type = "text" placeholder = "Username">
+                <input type = "text" name = "username" placeholder = "Username">
             </label>
         </div>
         <div>
             <label>
                 Password:
-                <input type = "password" placeholder = "Enter password">
+                <input type = "password" name = "password" placeholder = "Enter password">
             </label>
         </div>
         <input type = "submit" value = "Login">
     </form>
+
+    <p>
+        Don't have an account?
+        <a href = "{% url 'register' %}">
+            Register Here
+        </a>
+    </p>
 {% endblock %}

@@ -9,8 +9,30 @@
         <link href="https://jsdelivr.net" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     </head>
     <body>
-        {% block body %}
+        <div class = "container">
+            <nav class = "links">
+                <a href = "{% url 'index' %}">
+                    Home
+                </a>
+                {% if user.is_authenticated %}
+                    <span>
+                        Welcome, {{ user.username }}
+                    </span>
+                    <a href = "{% url 'logout' %}">
+                        Logout
+                    </a>
+                {% else %}
+                    <a href = "{% url 'login' %}">
+                        Login
+                    </a>
+                    <a href = "{% url 'register' %}">
+                        Register
+                    </a>
+                {% endif %}
+            </nav>
 
-        {% endblock %}
+            {% block body %}
+            {% endblock %}
+        </div>
     </body>
 </html>
