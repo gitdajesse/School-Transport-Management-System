@@ -6,9 +6,29 @@
 
 {% block body %}
     <h1>
-        Parent Dashboard Page
+        Parent Dashboard
     </h1>
     <p>
-        Hold on! Page still in production....
+        Welcome, {{ user.username }}
     </p>
+    <p>
+        You are logged in as a Parent.
+    </p>
+
+    <h2>
+        Your Children
+    </h2>
+    {% if user.parent_profile.children.all %}
+        <ul>
+            {% for child in user.parent_profile.children.all %}
+                <li>
+                    {{ child.name }} - Grade {{ child.grade }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>
+            You haven't registered any children yet.
+        </p>
+    {% endif %}
 {% endblock %}

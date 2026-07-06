@@ -6,9 +6,30 @@
 
 {% block body %}
     <h1>
-        Admin Dashboard Page
+        Admin Dashboard
     </h1>
     <p>
-        Hold on! Page still in production....
+        Welcome, {{ user.username }}
     </p>
+    <p>
+        You are logged in as an Admin.
+    </p>
+
+    <h2>
+        System Overview
+    </h2>
+    <ul>
+        <li>
+            Total Students: {{ total_students }}
+        </li>
+        <li>
+            Total Parents: {{ total_parents }}
+        </li>
+        <li>
+            Total Assistants: {{ total_assistants }}
+        </li>
+        <li>
+            Total Buses: {{ total_buses }}
+        </li>
+    </ul>
 {% endblock %}

@@ -1,14 +1,33 @@
 {% extends 'transport/layout.html' %}
 
 {% block title %}
-    Assistant Dashboard
+   Assistant Dashboard
 {% endblock %}
 
 {% block body %}
     <h1>
-        Assistant Dashboard Page
+        Assistant Dashboard
     </h1>
     <p>
-        Hold on! Page still in production....
+        Welcome, {{ user.username }}
     </p>
+    <p>
+        You are logged in as an Assistant.
+    </p>
+
+    <h2>
+        Your Bus
+    </h2>
+    {% if user.assistant_profile.bus %}
+        <p>
+            Bus: {{ user.assistant_profile.bus.registration }}
+        </p>
+        <p>
+            Route: {{ user.assistant_profile.bus.route_name }}
+        </p>
+    {% else %}
+        <p>
+            You haven't been assigned to a bus yet.
+        </p>
+    {% endif %}
 {% endblock %}
