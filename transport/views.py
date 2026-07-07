@@ -18,6 +18,8 @@ def index(request):
             return redirect('assistant_dashboard')
         elif request.user.user_type == 'admin':
             return redirect('admin_dashboard')
+        else:
+            return render(request, 'transport/index.html')
     else:
         return render (request, 'transport/index.html')
 
@@ -52,10 +54,6 @@ def register(request):
             messages.error(request, 'Please fill in your full name')
             return render(request, 'transport/register.html')
 
-        if not email:
-            messages.error(request, 'Please fill in your email')
-            return render(request, 'transport/register.html')
-
         if not password:
             messages.error(request, 'Please fill in your password')
             return render(request, 'transport/register.html')
@@ -68,13 +66,21 @@ def register(request):
             messages.error(request, 'Passwords do not match')
             return render(request, 'transport/register.html')
 
-        if not phone_number:
-            messages.error(request, 'Please fill in your phone number')
-            return render(request, 'transport/register.html')
-
-        if not home_address:
-            messages.error(request, 'Please fill in your home address')
-            return render(request, 'transport/register.html')
+        # Conditional validation based on user type
+        if user_type == 'parent':
+            if not email:
+                messages.error(request, 'Please fill in your email')
+                return render(request, 'transport/register.html')
+            if not phone_number:
+                messages.error(request, 'Please fill in your phone number')
+                return render(request, 'transport/register.html')
+            if not home_address:
+                messages.error(request, 'Please fill in your home address')
+                return render(request, 'transport/register.html')
+        elif user_type == 'assistant':
+            if not phone_number:
+                messages.error(request, 'Please fill in your phone number')
+                return render(request, 'transport/register.html')
 
         try:
             # Create user
@@ -100,7 +106,9 @@ def register(request):
             elif user_type == 'assistant':
                 Assistant.objects.create(
                     user = user,
-                    name = full_name
+                    name = full_name,
+                    email = email or '',
+                    phone_number = phone_number or ''
                 )
 
             # Login user after registration
@@ -129,7 +137,7 @@ def login_view(request):
     """ Handles user login """
 
     if request.user.is_authenticated:
-        return render('index')
+        return redirect('index')
 
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -140,7 +148,7 @@ def login_view(request):
             return render(request, 'transport/login.html')
 
         if not password:
-            messages.error(request, 'Please provide your passord')
+            messages.error(request, 'Please provide your password')
             return render(request, 'transport/login.html')
 
         # Authenticate user
@@ -161,7 +169,7 @@ def login_view(request):
                 return redirect('index')
         else:
             messages.error(request, 'Invalid username or password')
-            return redirect(request, 'transport/login.html')
+            return render(request, 'transport/login.html')
 
     return render (request, 'transport/login.html')
 

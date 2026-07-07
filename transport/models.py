@@ -73,7 +73,8 @@ class Student(models.Model):
 class Assistant(models.Model):
     user = models.OneToOneField(User, on_delete = models.CASCADE, related_name = 'assistant_profile')
     name = models.CharField(max_length = 200)
-    email = models.EmailField()
+    email = models.EmailField(blank=True, null=True)
+    phone_number = models.CharField(max_length = 15, blank = True, null = True)
     bus = models.ForeignKey(Bus, on_delete = models.SET_NULL, null = True, related_name = 'assistants')
     hire_date = models.DateTimeField(auto_now_add = True)
     is_active = models.BooleanField(default = True)
