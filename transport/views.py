@@ -10,18 +10,7 @@ from .models import User, Parent, Bus, Student, Assistant, Attendance, Notificat
 def index(request):
     """ Home page - redirects to appropraite dashboard if logged in """
 
-    if request.user.is_authenticated:
-        # Redirect based on user type
-        if request.user.user_type == 'parent':
-            return redirect('parent_dashboard')
-        elif request.user.user_type == 'assistant':
-            return redirect('assistant_dashboard')
-        elif request.user.user_type == 'admin':
-            return redirect('admin_dashboard')
-        else:
-            return render(request, 'transport/index.html')
-    else:
-        return render (request, 'transport/index.html')
+    return render (request, 'transport/index.html')
 
 def register(request):
     """ Handle user registration """
@@ -159,14 +148,7 @@ def login_view(request):
             messages.success(request, f'Welcome back, {user.username}!')
 
             # Redirect based on user type
-            if user.user_type == 'parent':
-                return redirect('parent_dashboard')
-            elif user.user_type == 'assistant':
-                return redirect('assistant_dashboard')
-            elif user.user_type == 'admin':
-                return redirect('admin_dashboard')
-            else:
-                return redirect('index')
+            return redirect('index')
         else:
             messages.error(request, 'Invalid username or password')
             return render(request, 'transport/login.html')

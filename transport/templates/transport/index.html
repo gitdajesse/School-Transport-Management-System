@@ -1,14 +1,368 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}
-    Index Page
-{% endblock %}
+{% block title %}Home - School Transport Management System{% endblock %}
 
 {% block body %}
-    <h1>
-        Index Page
-    </h1>
-    <p>
-        Hold on! Page still in production....
-    </p>
+    <!-- Hero Section -->
+    <div class="text-center py-5 mb-4">
+        <h1 class="display-3 fw-bold text-primary">
+            <i class="bi bi-bus-front"></i>
+            School Transport Management
+        </h1>
+        <p class="lead text-muted fs-4">
+            Streamlining student transportation for schools, parents, and drivers
+        </p>
+        <hr class="w-50 mx-auto my-4">
+        <p class="text-secondary">
+            Safe • Reliable • Efficient
+        </p>
+    </div>
+
+    {% if user.is_authenticated %}
+        <!-- Logged In View -->
+        
+
+        <!-- Quick Actions -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-8">
+                <div class="card card-shadow">
+                    <div class="card-body p-4 text-center">
+                        <h5 class="card-title mb-3">
+                            <i class="bi bi-speedometer2"></i>
+                            Quick Actions
+                        </h5>
+                        <p class="text-muted">
+                            What would you like to do today?
+                        </p>
+
+                        <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                            {% if user.user_type == 'parent' %}
+                                <a href="{% url 'parent_dashboard' %}" class="btn btn-success btn-lg px-5">
+                                    <i class="bi bi-person-heart"></i> Parent Dashboard
+                                </a>
+                                <a href="#" class="btn btn-outline-primary">
+                                    <i class="bi bi-credit-card"></i> Pay Transport Fees
+                                </a>
+                            {% elif user.user_type == 'assistant' %}
+                                <a href="{% url 'assistant_dashboard' %}" class="btn btn-info btn-lg px-5 text-white">
+                                    <i class="bi bi-bus-front"></i> Assistant Dashboard
+                                </a>
+                                <a href="#" class="btn btn-outline-primary">
+                                    <i class="bi bi-check2-square"></i> Take Attendance
+                                </a>
+                            {% elif user.user_type == 'admin' %}
+                                <a href="{% url 'admin_dashboard' %}" class="btn btn-primary btn-lg px-5">
+                                    <i class="bi bi-shield-lock"></i> Admin Dashboard
+                                </a>
+                                <a href="#" class="btn btn-outline-danger">
+                                    <i class="bi bi-tools"></i>
+                                    Django Admin
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User-specific Information -->
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card card-shadow">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            Your Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">
+                                        Username:
+                                    </dt>
+                                    <dd class="col-sm-8">
+                                        {{ user.username }}
+                                    </dd>
+
+                                    <dt class="col-sm-4">
+                                        Email:
+                                    </dt>
+                                    <dd class="col-sm-8">
+                                        {{ user.email|default:"Not provided" }}
+                                    </dd>
+
+                                    <dt class="col-sm-4">
+                                        User Type:
+                                    </dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge bg-primary">
+                                            {{ user.user_type|title }}
+                                        </span>
+                                    </dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row">
+                                    <dt class="col-sm-4">
+                                        Phone:
+                                    </dt>
+                                    <dd class="col-sm-8">
+                                        {{ user.phone_number|default:"Not provided" }}
+                                    </dd>
+
+                                    <dt class="col-sm-4">
+                                        Account Status:
+                                    </dt>
+                                    <dd class="col-sm-8">
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">
+                                                Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                Inactive
+                                            </span>
+                                        {% endif %}
+                                    </dd>
+
+                                    <dt class="col-sm-4">
+                                        Member Since:
+                                    </dt>
+                                    <dd class="col-sm-8">
+                                        {{ user.date_joined|date:"M d, Y" }}
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% else %}
+        <!-- Not Logged In View -->
+        <div class="row g-4 mt-3">
+            <div class="col-md-4">
+                <div class="card card-shadow h-100 text-center border-primary">
+                    <div class="card-body p-4">
+                        <div class="display-4 text-primary mb-3">
+                            <i class="bi bi-person-heart"></i>
+                        </div>
+                        <h5 class="card-title">
+                            For Parents
+                        </h5>
+                        <p class="card-text text-muted">
+                            Track your child's transport progress in real-time.
+                            View attendance records, manage transport fees, and receive
+                            instant notifications about your child's journey.
+                        </p>
+                        <ul class="list-unstyled text-start text-muted">
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                 Real-time tracking
+                                </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Attendance history
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Fee management
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Instant alerts
+                            </li>
+                        </ul>
+                        <a href="{% url 'register' %}" class="btn btn-primary mt-3 w-100">
+                            <i class="bi bi-person-plus"></i>
+                            Register as Parent
+                        </a>
+                        <small class="text-muted d-block mt-2">
+                            Already registered?
+                            <a href="{% url 'login' %}">
+                                Login
+                            </a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-shadow h-100 text-center border-info">
+                    <div class="card-body p-4">
+                        <div class="display-4 text-info mb-3">
+                            <i class="bi bi-bus-front"></i>
+                        </div>
+                        <h5 class="card-title">
+                            For Assistants
+                        </h5>
+                        <p class="card-text text-muted">
+                            Manage your daily routes efficiently.
+                            Record student attendance, track bus capacity,
+                            and ensure safe transportation for all students.
+                        </p>
+                        <ul class="list-unstyled text-start text-muted">
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Route management
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Attendance recording
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Student lists
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Daily reports
+                            </li>
+                        </ul>
+                        <a href="{% url 'register' %}" class="btn btn-info text-white mt-3 w-100">
+                            <i class="bi bi-person-plus"></i>
+                            Register as Assistant
+                        </a>
+                        <small class="text-muted d-block mt-2">
+                            Already registered?
+                            <a href="{% url 'login' %}">
+                                Login
+                            </a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card card-shadow h-100 text-center border-warning">
+                    <div class="card-body p-4">
+                        <div class="display-4 text-warning mb-3">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                        <h5 class="card-title">
+                            For Administrators
+                        </h5>
+                        <p class="card-text text-muted">
+                            Complete control over your transport system.
+                            Manage students, staff, buses, transport fees, and generate
+                            comprehensive reports for better decision making.
+                        </p>
+                        <ul class="list-unstyled text-start text-muted">
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Student management
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Staff management
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Fee collection
+                            </li>
+                            <li>
+                                <i class="bi bi-check-circle text-success"></i>
+                                Analytics & reports
+                            </li>
+                        </ul>
+                        <a href="{% url 'register' %}" class="btn btn-warning text-dark mt-3 w-100">
+                            <i class="bi bi-person-plus"></i>
+                            Register as Admin
+                        </a>
+                        <small class="text-muted d-block mt-2">
+                            Already registered?
+                            <a href="{% url 'login' %}">
+                                Login
+                            </a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="mt-5">
+            <h3 class="text-center mb-4">
+                <i class="bi bi-stars"></i>
+                Key Features
+            </h3>
+            <div class="row g-4">
+                <div class="col-md-3 col-6">
+                    <div class="text-center">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                            <i class="bi bi-geo-alt fs-2 text-primary"></i>
+                        </div>
+                        <h6>
+                            Real-time Tracking
+                        </h6>
+                        <small class="text-muted">
+                            Know where your child is
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="text-center">
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                            <i class="bi bi-bell fs-2 text-success"></i>
+                        </div>
+                        <h6>
+                            Instant Alerts
+                        </h6>
+                        <small class="text-muted">
+                            Never miss an update
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="text-center">
+                        <div class="bg-info bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                            <i class="bi bi-credit-card fs-2 text-info"></i>
+                        </div>
+                        <h6>
+                            Easy Payments
+                        </h6>
+                        <small class="text-muted">
+                            Manage transport fees online
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="text-center">
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-2">
+                            <i class="bi bi-graph-up fs-2 text-warning"></i>
+                        </div>
+                        <h6>
+                            Reports
+                        </h6>
+                        <small class="text-muted">
+                            Data-driven insights
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="text-center mt-5 p-4 bg-primary bg-opacity-10 rounded-4">
+            <h4 class="mb-3">
+                Ready to Get Started?
+            </h4>
+            <p class="text-muted">
+                Join thousands of parents and schools already using our platform.
+            </p>
+            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center">
+                <a href="{% url 'register' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-person-plus"></i>
+                    Create Account
+                </a>
+                <a href="{% url 'login' %}" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Login
+                </a>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}

@@ -1,202 +1,308 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}
-    Register Page
-{% endblock %}
+{% block title %}Register - School Transport{% endblock %}
 
 {% block body %}
-    <h1>
-        Register
-    </h1>
+    <div class="card card-shadow">
+        <div class="card-body p-4 p-md-5">
+            <h1 class="page-title">
+                <i class="bi bi-person-plus"></i>
+                Create Account
+            </h1>
+            <p class="text-muted mb-4">
+                Join the School Transport Management System. Select your role and fill in the details below.
+            </p>
 
-    <!-- Drop Down Menu -->
-    <label for = "formSelector">
-        Choose an Option:
-    </label>
-    <select id = "formSelector" name = "user_type">
-        <option value = "">
-            -- Select an Option --
-        </option>
-        <option value = "admin">
-            Admin
-        </option>
-        <option value = "parent">
-            Parent
-        </option>
-        <option value = "assistant">
-            Assistant
-        </option>
-    </select>
-
-    <div id = "formConatiner">
-        <!-- Form for admin-->
-        <form id = "form-admin" class = "dynamic-form" style = "display: none;" method = "POST" action = "{% url 'register' %}">
-            {% csrf_token %}
-            <h3>
-                Admin Information
-            </h3>
-
-            <input type = "hidden" name = "user_type" value = "admin">
-
-            <div>
-                <label>
-                    Full Name:
-                    <input type = "text" name = "full_name" placeholder = "Full Name">
+            <!-- Role Selection -->
+            <div class="mb-4">
+                <label for="formSelector" class="form-label">
+                    <i class="bi bi-person-badge"></i>
+                    Select Your Role:
                 </label>
+                <select id="formSelector" name="user_type" class="form-select form-select-lg">
+                    <option value="">-- Choose an Option --</option>
+                    <option value="parent">👨‍👩‍👧‍👦 Parent</option>
+                    <option value="assistant">🚌 Transport Assistant</option>
+                    <option value="admin">🔧 Administrator</option>
+                </select>
             </div>
 
-            <div>
-                <label>
-                    Username:
-                    <input type = "text" name = "username" placeholder = "Username">
-                </label>
+            <!-- Dynamic Forms -->
+            <div id="formContainer">
+                <!-- Admin Form -->
+                <form id="form-admin" class="dynamic-form" style="display: none;" method="POST" action="{% url 'register' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_type" value="admin">
+
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-shield-lock"></i>
+                                Admin Registration
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Full Name
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="text"
+                                    name="full_name"
+                                    class="form-control"
+                                    autocomplete="off"
+                                    autofocus
+                                    placeholder="Enter full name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Username
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="text"
+                                    name="username"
+                                    class="form-control"
+                                    autocomplete = "off" placeholder="Choose username" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Email Address
+                                    </label>
+                                    <input type="email"
+                                    name="email"
+                                    class="form-control"
+                                    autocomplete = "off" placeholder="Enter email">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Phone Number
+                                    </label>
+                                    <input type="tel" name="phone_number" class="form-control"
+                                    autocomplete = "off"
+                                    placeholder="Enter phone number">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Password
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="password" name="password"
+                                    class="form-control" placeholder="Enter password" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Confirm Password
+                                        <span class="text-danger">
+                                            *</span>
+                                        </label>
+                                    <input type="password" name="confirm_password" class="form-control" placeholder="Confirm password" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-person-plus"></i> Register as Admin
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Parent Form -->
+                <form id="form-parent" class="dynamic-form" style="display: none;" method="POST" action="{% url 'register' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_type" value="parent">
+
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-person-heart"></i> Parent Registration
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Full Name
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="text"
+                                    name="full_name"
+                                    class="form-control"
+                                    autocomplete = "off"
+                                    autofocus
+                                    placeholder="Enter full name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Username
+                                        <span class="text-danger">
+                                            *</span>
+                                        </label>
+                                    <input type="text"
+                                    name="username"
+                                    class="form-control"
+                                    autocomplete = "off"
+                                    placeholder="Choose username" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Email Address
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="email"
+                                    name="email"
+                                    class="form-control"
+                                    autocomplete = "off"
+                                    placeholder="Enter email" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Home Address
+                                        <span class="text-danger">
+                                            *</span>
+                                        </label>
+                                    <input type="text" name="home_address" class="form-control"
+                                    autocomplete = "off"
+                                    placeholder="Enter home address" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Phone Number
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="tel" name="phone_number" class="form-control"
+                                    autocomplete = "off" placeholder="Enter phone number" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Password
+                                        <span class="text-danger">
+                                            *</span>
+                                        </label>
+                                    <input type="password" name="password"
+                                    class="form-control"placeholder="Enter password" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Confirm Password
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="password" name="confirm_password" class="form-control" placeholder="Confirm password" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="bi bi-person-plus"></i> Register as Parent
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Assistant Form -->
+                <form id="form-assistant" class="dynamic-form" style="display: none;" method="POST" action="{% url 'register' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_type" value="assistant">
+
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-bus-front"></i> Assistant Registration
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Full Name
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="text"
+                                    name="full_name"
+                                    class="form-control"
+                                    autocomplete = "off"
+                                    autofocus
+                                    placeholder="Enter full name" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Username
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="text"
+                                    name="username"
+                                    class="form-control"
+                                    autocomplete = "off" placeholder="Choose username" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Email Address
+                                    </label>
+                                    <input type="email" name="email" class="form-control"
+                                    autocomplete = "off" placeholder="Enter email">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Phone Number
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="tel" name="phone_number" class="form-control"
+                                    autocomplete = "off" placeholder="Enter phone number" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Password
+                                        <span class="text-danger">
+                                            *
+                                        </span>
+                                    </label>
+                                    <input type="password" name="password"
+                                    class="form-control" placeholder="Enter password" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">
+                                        Confirm Password
+                                        <span class="text-danger">
+                                            *</span>
+                                        </label>
+                                    <input type="password" name="confirm_password" class="form-control" placeholder="Confirm password" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-info btn-lg w-100 text-white">
+                                <i class="bi bi-person-plus"></i> Register as Assistant
+                            </button>
+                        </div>
+                    </div>
+                </form>
             </div>
 
-            <div>
-                <label>
-                    Email Address:
-                    <input type = "email" name = "email" placeholder = "Email Address">
-                </label>
+            <div class="text-center mt-4">
+                <p class="text-muted">
+                    Already have an account?
+                    <a href="{% url 'login' %}" class="auth-link">
+                        <i class="bi bi-box-arrow-in-right"></i>
+                        Login here
+                    </a>
+                </p>
             </div>
-
-            <div>
-                <label>
-                    Phone Number:
-                    <input type = "tel" name = "phone_number" placeholder = "Phone Number">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Password:
-                    <input type = "password" name = "password" placeholder = "Enter password">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Confirm Password:
-                    <input type = "password" name = "confirm_password" placeholder = "Confirm password">
-                </label>
-            </div>
-
-            <input type = "submit" value = "Register">
-        </form>
-
-        <!-- Form for parent-->
-        <form id = "form-parent" class = "dynamic-form" style = "display: none;" method = "POST" action = "{% url 'register' %}">
-            {% csrf_token %}
-            <h3>
-                Parent Information
-            </h3>
-
-            <input type = "hidden" name = "user_type" value = "parent">
-
-            <div>
-                <label>
-                    Full Name:
-                    <input type = "text" name = "full_name" placeholder = "Full Name">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Username:
-                    <input type = "text" name = "username" placeholder = "Username">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Email Address:
-                    <input type = "email" name = "email" placeholder = "Email Address">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Home Address:
-                    <input type = "text" name = "home_address" placeholder = "Home Address">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Phone Number:
-                    <input type = "tel" name = "phone_number" placeholder = "Phone Number">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Password:
-                    <input type = "password" name = "password" placeholder = "Enter password">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Confirm Password:
-                    <input type = "password" name = "confirm_password" placeholder = "Confirm password">
-                </label>
-            </div>
-
-            <input type = "submit" value = "Register">
-        </form>
-
-        <!-- Form for assistant-->
-        <form id = "form-assistant" class = "dynamic-form" style = "display: none;" method = "POST" action = "{% url 'register' %}">
-            {% csrf_token %}
-            <h3>
-                Assistant Information
-            </h3>
-
-            <input type = "hidden" name = "user_type" value = "assistant">
-
-            <div>
-                <label>
-                    Full Name:
-                    <input type = "text" name = "full_name" placeholder = "Full Name">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Username:
-                    <input type = "text" name = "username" placeholder = "Username">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Email Address:
-                    <input type = "email" name = "email" placeholder = "Email Address">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Phone Number:
-                    <input type = "tel" name = "phone_number" placeholder = "Phone Number">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Password:
-                    <input type = "password" name = "password" placeholder = "Enter password">
-                </label>
-            </div>
-
-            <div>
-                <label>
-                    Confirm Password:
-                    <input type = "password" name = "confirm_password" placeholder = "Confirm password">
-                </label>
-            </div>
-
-            <input type = "submit" value = "Register">
-        </form>
+        </div>
     </div>
 
     <script>
@@ -213,14 +319,12 @@
 
                 if (selectedValue) {
                     const targetForm = document.getElementById(`form-${selectedValue}`)
-
                     if (targetForm) {
                         targetForm.style.display = 'block';
+                        targetForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
                 }
             });
         });
-
-
     </script>
 {% endblock %}
