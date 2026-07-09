@@ -192,3 +192,56 @@ def admin_dashboard(request):
             'total_buses': Bus.objects.count()
         }
         return render (request, 'transport/admin_dashboard.html', context)
+
+
+@login_required
+def manage_system(request):
+    if request.method == "POST":
+
+        # Get form data
+        full_name = request.POST.get('full_name')
+        grade = request.POST.get('grade')
+        parent_name = request.POST.get('parent_name')
+        bus = request.POST.get('bus')
+        pick_up = request.POST.get('pick_up')
+        drop_off = request.POST.get('drop_off')
+        emergency_contact = request.POST.get('emergency_contact')
+
+        # Validation
+        if not full_name:
+            messages.error(request, "Please fill in the student's name.")
+            return render(request, 'transport/manage_system.html')
+        if not grade:
+            messages.error(request, "Please fill in the student's grade.")
+            return render(request, 'transport/manage_system.html')
+        if not parent_name:
+            messages.error(request, "Please fill in the student's parent name")
+            return render(request, 'transport/manage_system.html')
+        if not bus:
+            messages.error(request, "Please fill in the bus related to the student")
+            return render(request, 'transport/manage_system.html')
+        if not pick_up:
+            messages.error(request, "Please fill in the pick up location")
+            return render(request, 'transport/manage_system.html')
+        if not drop_off:
+            messages.error(request, "Please fill in the drop off location")
+            return render(request, 'transport/manage_system.html')
+        if not emergency_contact:
+            messages.error(request, "Please fill in the student's emergency contact")
+            return render(request, 'transport/manage_system.html')
+
+        # Create student
+        # Not fully functional
+        student = student.objects.create(
+            name = full_name,
+            grade = grade,
+            parent = parent_name,
+            bus = bus,
+            pick_up_location = pick_up,
+            drop_off_location = drop_off,
+            emergency_contact = emergency_contact,
+        )
+
+        messages.success(request, f'Successfully added {full_name} as a student')
+    else:
+        return render(request, 'transport/manage_system.html')

@@ -1,0 +1,88 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Admin - Manage System
+{% endblock %}
+
+{% block body %}
+    <h1>
+        Manage System
+    </h1>
+    <p>
+        Page still in development.
+    </p>
+    <p>
+        Watch out for student creation form.
+    </p>
+
+    <form action = "#" method = "POST">
+        {% csrf_token %}
+        <h2>
+            Add Student
+        </h2>
+
+        <label>
+            Full Name:
+            <input type = "text"
+            name = "full_name"
+            placeholder = "Enter Student's name"
+            >
+        </label>
+        <label>
+            <!-- For grade, include PP1 and PP2 -->
+            Grade:
+            <input type = "input"
+            name = "grade"
+            type = "range"
+            min = "1"
+            max = "9"
+            value = "Select Grade"
+            >
+        </label>
+        <label>
+            <!-- For parents, put a dropdown for the parent's who have registered -->
+            Parent's name:
+            <input type = "text"
+            name = "parent_name"
+            placeholder = "Enter parent's name"
+            >
+        </label>
+        <label>
+            <!-- For the bus, assign a bus which is registered to the student  -->
+            Bus:
+            <input type = "input"
+            name = "bus"
+            type = "range"
+            min = "1"
+            max = "10"
+            value = "Select Bus"
+            >
+        </label>
+        <label>
+            Pick up Location:
+            <input type = "text"
+            name = "pick_up"
+            placeholder = "Enter pick up location"
+            >
+        </label>
+        <label>
+            Drop off Location:
+            <input type = "text"
+            name = "drop_off"
+            placeholder = "Enter drop off location"
+            >
+        </label>
+        <label>
+            Emergency Contact:
+            <input type = "tel"
+            name = "emergency_contact"
+            placeholder = "Enter emergency contact"
+            >
+        </label>
+        <input type = "submit"
+        value = "Add student"
+        >
+    </form>
+
+
+{% endblock %}

@@ -8,5 +8,6 @@ urlpatterns = [
     path('logout/', views.logout_view, name = 'logout'),
     path('parent-dashboard/', views.parent_dashboard, name = 'parent_dashboard'),
     path('assistant-dashboard/', views.assistant_dashboard, name = 'assistant_dashboard'),
-    path('admin-dashboard/', views.admin_dashboard, name = 'admin_dashboard')
+    path('admin-dashboard/', views.admin_dashboard, name = 'admin_dashboard'),
+    path('manage-system/', views.manage_system, name = 'manage_system')
 ]
