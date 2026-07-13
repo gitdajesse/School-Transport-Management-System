@@ -196,52 +196,118 @@ def admin_dashboard(request):
 
 @login_required
 def manage_system(request):
-    if request.method == "POST":
+    # Only allow admins
+    if request.user.user_type != 'admin':
+            messages.error(request, 'Access denied. You are not an admin.')
+            return redirect('index')
 
+    # Get all parents and buses for dropdowns
+    parents = Parent.objects.all()
+    buses = Bus.objects.all()
+
+    context = {
+        'parents': parents,
+        'buses': buses,
+    }
+
+    if request.method == "POST":
         # Get form data
         full_name = request.POST.get('full_name')
         grade = request.POST.get('grade')
         parent_name = request.POST.get('parent_name')
-        bus = request.POST.get('bus')
+        bus_registration = request.POST.get('bus')
         pick_up = request.POST.get('pick_up')
         drop_off = request.POST.get('drop_off')
         emergency_contact = request.POST.get('emergency_contact')
 
+        context['form_data'] = {
+            'full_name': full_name,
+            'grade': grade,
+            'parent_name': parent_name,
+            'bus': bus_obj,
+            'pick_up': pick_up,
+            'drop_off': drop_off,
+            'emergency_contact': 'emergency_contact',
+        }
+
         # Validation
         if not full_name:
             messages.error(request, "Please fill in the student's name.")
-            return render(request, 'transport/manage_system.html')
+            context['form_data'] = request.POST
+            return render(request, 'transport/manage_system.html', context)
         if not grade:
             messages.error(request, "Please fill in the student's grade.")
-            return render(request, 'transport/manage_system.html')
+            context['form_data'] = request.POST
+            return render(request, 'transport/manage_system.html', context)
         if not parent_name:
-            messages.error(request, "Please fill in the student's parent name")
-            return render(request, 'transport/manage_system.html')
-        if not bus:
-            messages.error(request, "Please fill in the bus related to the student")
-            return render(request, 'transport/manage_system.html')
+            messages.error(request, "Please select a parent for the student")
+            context['form_data'] = request.POST
+            return render(request, 'transport/manage_system.html', context)
+        if not bus_registration:
+            messages.error(request, "Please select a bus for the student")
+            context['form_data'] = request.POST
+            return render(request, 'transport/manage_system.html', context)
         if not pick_up:
             messages.error(request, "Please fill in the pick up location")
-            return render(request, 'transport/manage_system.html')
+            context['form_data'] = request.POST
+            return render(request, 'transport/manage_system.html', context)
         if not drop_off:
             messages.error(request, "Please fill in the drop off location")
-            return render(request, 'transport/manage_system.html')
+            context['form_data'] = request.POST
+            return render(request, 'transport/manage_system.html', context)
         if not emergency_contact:
             messages.error(request, "Please fill in the student's emergency contact")
-            return render(request, 'transport/manage_system.html')
+            context['form_data'] = request.POST
+            return render(request, 'transport/manage_system.html', context)
 
-        # Create student
-        # Not fully functional
-        student = student.objects.create(
-            name = full_name,
-            grade = grade,
-            parent = parent_name,
-            bus = bus,
-            pick_up_location = pick_up,
-            drop_off_location = drop_off,
-            emergency_contact = emergency_contact,
-        )
+        try:
+            try:
+                # Find the parent
+                parent = Parent.objects.get(name = parent_name)
+            except Parent.DoesNotExist:
+                messages.error(request, 'Parent not found. Please register the parent first.')
+                context['form_data'] = request.POST
+                return render(request, 'transport/manage_system.html', context)
 
-        messages.success(request, f'Successfully added {full_name} as a student')
+            try:
+                # Find the bus
+                bus_obj = Bus.objects.get(registration = bus_registration)
+            except Bus.DoesNotExist:
+                messages.error(request, 'Bus not found. Please register the bus first.')
+                context['form_data'] = request.POST
+                return render(request, 'transport/manage_system.html, context')
+
+            # Check if student already exists
+            existing_student = Student.objects.filter(
+                name = full_name,
+                parent = parent,
+                is_active = True
+            ).first()
+
+            if existing_student:
+                messages.warning(request, 'Student already exists for this parent.')
+
+            # Create student
+            student = Student.objects.create(
+                name = full_name,
+                grade = grade,
+                parent = parent,
+                bus = bus_obj,
+                pick_up_location = pick_up,
+                drop_off_location = drop_off,
+                emergency_contact = emergency_contact,
+                is_active = True
+            )
+
+            messages.success(request, f'Successfully added {full_name} as a student!')
+
+            # Redirect to student list
+            return redirect('student_list')
+
+        except Exception as e:
+            messages.error(request, f'Error adding student: {str(e)}')
+            context['form_data'] = request.POST
+            return render(request, 'transport/manage_system.html', context)
+
     else:
-        return render(request, 'transport/manage_system.html')
+        return render(request, 'transport/manage_system.html', context)

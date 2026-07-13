@@ -15,70 +15,132 @@
         Watch out for student creation form.
     </p>
 
-    <form action = "#" method = "POST">
+    <form action = "{% url 'manage_system' %}" method = "POST">
         {% csrf_token %}
         <h2>
             Add Student
         </h2>
 
-        <label>
-            Full Name:
-            <input type = "text"
-            name = "full_name"
-            placeholder = "Enter Student's name"
-            >
-        </label>
-        <label>
-            <!-- For grade, include PP1 and PP2 -->
-            Grade:
-            <input type = "input"
-            name = "grade"
-            type = "range"
-            min = "1"
-            max = "9"
-            value = "Select Grade"
-            >
-        </label>
-        <label>
-            <!-- For parents, put a dropdown for the parent's who have registered -->
-            Parent's name:
-            <input type = "text"
-            name = "parent_name"
-            placeholder = "Enter parent's name"
-            >
-        </label>
-        <label>
-            <!-- For the bus, assign a bus which is registered to the student  -->
-            Bus:
-            <input type = "input"
-            name = "bus"
-            type = "range"
-            min = "1"
-            max = "10"
-            value = "Select Bus"
-            >
-        </label>
-        <label>
-            Pick up Location:
-            <input type = "text"
-            name = "pick_up"
-            placeholder = "Enter pick up location"
-            >
-        </label>
-        <label>
-            Drop off Location:
-            <input type = "text"
-            name = "drop_off"
-            placeholder = "Enter drop off location"
-            >
-        </label>
-        <label>
-            Emergency Contact:
-            <input type = "tel"
-            name = "emergency_contact"
-            placeholder = "Enter emergency contact"
-            >
-        </label>
+        <div class = "form-group">
+            <label>
+                Full Name:
+                <input type = "text"
+                name = "full_name"
+                class = "form-control"
+                placeholder = "Enter Student's name"
+                >
+            </label>
+        </div>
+
+        <div class = "form-group">
+            <label>
+                Grade:
+                <select name = "grade" class = "form-select">
+                    <option value = "">
+                        Select Grade
+                    </option>
+                    <option value = "PP1">
+                        PP1
+                    </option>
+                    <option value = "P2">
+                        PP2
+                    </option>
+                    <option value = "1">
+                        Grade 1
+                    </option>
+                    <option value = "2">
+                        Grade 2
+                    </option>
+                    <option value = "3">
+                        Grade 3
+                    </option>
+                    <option value = "4">
+                        Grade 4
+                    </option>
+                    <option value = "5">
+                        Grade 5
+                    </option>
+                    <option value = "6">
+                        Grade 6
+                    </option>
+                    <option value = "7">
+                        Grade 7
+                    </option>
+                    <option value = "8">
+                        Grade 8
+                    </option>
+                    <option value = "9">
+                        Grade 9
+                    </option>
+                </select>
+            </label>
+        </div>
+
+        <div class = "form-group">
+            <label>
+                Parent's name:
+                <select name = "parent_name" class = "form-select">
+                    <option value = "">
+                        Select Parent
+                    </option>
+                    {% for parent in parents %}
+                        <option value = "{{ parent.name }}">
+                            {{ parent.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+
+        <div class = "form-group">
+            <label>
+                Bus:
+                <select name = "bus" class = "form-select">
+                    <option value = "">
+                        Select Bus
+                    </option>
+                    {% for bus in buses %}
+                        <option value = "{{ bus.registration }}">
+                            {{ bus.registration }} - {{ bus.route_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+
+        <div class = "form-group">
+            <label>
+                Pick up Location:
+                <input type = "text"
+                name = "pick_up"
+                class = "form-control"
+                placeholder = "Enter pick up location"
+                >
+            </label>
+        </div>
+
+        <div class = "form-group">
+            <label>
+                Drop off Location:
+                <input type = "text"
+                name = "drop_off"
+                class = "form-control"
+                placeholder = "Enter drop off location"
+                >
+            </label>
+        </div>
+
+        <div class = "form-group">
+            <label>
+                Emergency Contact:
+                <input type = "tel"
+                name = "emergency_contact"
+                class = "form-control"
+                placeholder = "Enter emergency contact"
+                >
+            </label>
+        </div>
+
         <input type = "submit"
         value = "Add student"
         >
