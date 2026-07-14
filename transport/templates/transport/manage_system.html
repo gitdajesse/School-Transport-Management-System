@@ -1,150 +1,309 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}
-    Admin - Manage System
-{% endblock %}
+{% block title %}Admin - Manage System{% endblock %}
 
 {% block body %}
-    <h1>
+    <h1 class="page-title">
+        <i class="bi bi-tools"></i>
         Manage System
     </h1>
-    <p>
-        Page still in development.
-    </p>
-    <p>
-        Watch out for student creation form.
-    </p>
 
-    <form action = "{% url 'manage_system' %}" method = "POST">
-        {% csrf_token %}
-        <h2>
-            Add Student
-        </h2>
+    <div class="row">
+        <!-- Add Student Form -->
+        <div class="col-lg-6">
+            <div class="card card-shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-plus"></i>
+                        Add Student
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'manage_system' %}">
+                        {% csrf_token %}
 
-        <div class = "form-group">
-            <label>
-                Full Name:
-                <input type = "text"
-                name = "full_name"
-                class = "form-control"
-                placeholder = "Enter Student's name"
-                >
-            </label>
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Full Name
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <input type="text"
+                            name="full_name"
+                            class="form-control"
+                            placeholder="Enter student's full name"
+                            value="{{ form_data.full_name|default:'' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Grade
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <select name="grade"
+                            class="form-select"
+                            required>
+                                <option value="">
+                                    Select Grade
+                                </option>
+                                <option value="PP1"
+                                {% if form_data.grade == 'PP1' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    PP1
+                                </option>
+                                <option value="PP2"
+                                {% if form_data.grade == 'PP2' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    PP2
+                                </option>
+                                <option value="1"
+                                {% if form_data.grade == '1' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 1
+                                </option>
+                                <option value="2"
+                                {% if form_data.grade == '2' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 2
+                                </option>
+                                <option value="3"
+                                {% if form_data.grade == '3' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 3
+                                </option>
+                                <option value="4"
+                                {% if form_data.grade == '4' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 4
+                                </option>
+                                <option value="5"
+                                {% if form_data.grade == '5' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 5
+                                </option>
+                                <option value="6"
+                                {% if form_data.grade == '6' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 6
+                                </option>
+                                <option value="7"
+                                {% if form_data.grade == '7' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 7
+                                </option>
+                                <option value="8"
+                                {% if form_data.grade == '8' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 8
+                                </option>
+                                <option value="9"
+                                {% if form_data.grade == '9' %}
+                                    selected
+                                {% endif %}
+                                >
+                                    Grade 9
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Parent
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <select name="parent_name" class="form-select"
+                            required>
+                                <option value="">
+                                    Select Parent
+                                </option>
+                                {% for parent in parents %}
+                                    <option value="{{ parent.name }}"
+                                            {% if form_data.parent_name == parent.name %}
+                                                selected
+                                            {% endif %}>
+                                        {{ parent.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if not parents %}
+                                <small class="text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    No parents registered yet. Please register a parent first.
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Bus
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <select name="bus"
+                            class="form-select"
+                            required>
+                                <option value="">
+                                    Select Bus
+                                </option>
+                                {% for bus in buses %}
+                                    <option value="{{ bus.registration }}"
+                                            {% if form_data.bus == bus.registration %}
+                                                selected
+                                            {% endif %}>
+                                        {{ bus.registration }} - {{ bus.route_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            {% if not buses %}
+                                <small class="text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    No buses registered yet. Please register a bus first.
+                                </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Pick up Location
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <input type="text" name="pick_up" class="form-control"
+                            placeholder="Enter pick up location"
+                            value="{{ form_data.pick_up|default:'' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Drop off Location
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <input type="text" name="drop_off" class="form-control"
+                            placeholder="Enter drop off location"
+                            value="{{ form_data.drop_off|default:'' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Emergency Contact
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <input type="tel" name="emergency_contact" class="form-control"
+                            placeholder="Enter emergency contact phone number"
+                            value="{{ form_data.emergency_contact|default:'' }}" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-person-plus"></i>
+                            Add Student
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
 
-        <div class = "form-group">
-            <label>
-                Grade:
-                <select name = "grade" class = "form-select">
-                    <option value = "">
-                        Select Grade
-                    </option>
-                    <option value = "PP1">
-                        PP1
-                    </option>
-                    <option value = "P2">
-                        PP2
-                    </option>
-                    <option value = "1">
-                        Grade 1
-                    </option>
-                    <option value = "2">
-                        Grade 2
-                    </option>
-                    <option value = "3">
-                        Grade 3
-                    </option>
-                    <option value = "4">
-                        Grade 4
-                    </option>
-                    <option value = "5">
-                        Grade 5
-                    </option>
-                    <option value = "6">
-                        Grade 6
-                    </option>
-                    <option value = "7">
-                        Grade 7
-                    </option>
-                    <option value = "8">
-                        Grade 8
-                    </option>
-                    <option value = "9">
-                        Grade 9
-                    </option>
-                </select>
-            </label>
+        <!-- Quick Links -->
+        <div class="col-lg-6">
+            <div class="card card-shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-link"></i>
+                        Quick Links
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{% url 'student_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-people text-primary"></i>
+                            View All Students
+                            <span class="badge bg-primary float-end">
+                                {{ total_students|default:0 }}
+                            </span>
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-bus-front text-success"></i>
+                            Manage Buses
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person-heart text-info"></i>
+                            Manage Parents
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person-badge text-warning"></i>
+                            Manage Assistants
+                        </a>
+                        <a href="{% url 'admin_dashboard' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-speedometer2 text-danger"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Students -->
+            <div class="card card-shadow mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history"></i>
+                        Recent Students
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_students %}
+                        <ul class="list-group">
+                            {% for student in recent_students %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="bi bi-person-fill text-primary"></i>
+                                        {{ student.name }}
+                                        <small class="text-muted ms-2">
+                                            Grade {{ student.grade }}
+                                        </small>
+                                    </div>
+                                    <span class="badge bg-success">
+                                        Added
+                                    </span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted text-center">
+                            No students added yet.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-
-        <div class = "form-group">
-            <label>
-                Parent's name:
-                <select name = "parent_name" class = "form-select">
-                    <option value = "">
-                        Select Parent
-                    </option>
-                    {% for parent in parents %}
-                        <option value = "{{ parent.name }}">
-                            {{ parent.name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </label>
-        </div>
-
-        <div class = "form-group">
-            <label>
-                Bus:
-                <select name = "bus" class = "form-select">
-                    <option value = "">
-                        Select Bus
-                    </option>
-                    {% for bus in buses %}
-                        <option value = "{{ bus.registration }}">
-                            {{ bus.registration }} - {{ bus.route_name }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </label>
-        </div>
-
-        <div class = "form-group">
-            <label>
-                Pick up Location:
-                <input type = "text"
-                name = "pick_up"
-                class = "form-control"
-                placeholder = "Enter pick up location"
-                >
-            </label>
-        </div>
-
-        <div class = "form-group">
-            <label>
-                Drop off Location:
-                <input type = "text"
-                name = "drop_off"
-                class = "form-control"
-                placeholder = "Enter drop off location"
-                >
-            </label>
-        </div>
-
-        <div class = "form-group">
-            <label>
-                Emergency Contact:
-                <input type = "tel"
-                name = "emergency_contact"
-                class = "form-control"
-                placeholder = "Enter emergency contact"
-                >
-            </label>
-        </div>
-
-        <input type = "submit"
-        value = "Add student"
-        >
-    </form>
-
-
+    </div>
 {% endblock %}

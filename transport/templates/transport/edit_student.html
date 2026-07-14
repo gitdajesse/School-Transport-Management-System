@@ -1,0 +1,205 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Edit Student - {{ student.name }}{% endblock %}
+
+{% block body %}
+    <h1 class="page-title">
+        <i class="bi bi-pencil-square"></i> Edit Student
+    </h1>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-fill"></i>
+                        Editing: {{ student.name }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'edit_student' student.id %}">
+                        {% csrf_token %}
+
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                                <input type="text" name="full_name" class="form-control"
+                                value="{{ student.name }}" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Grade <span class="text-danger">*</span></label>
+                                <select name="grade" class="form-select" required>
+                                    <option value="">Select Grade</option>
+                                    <option value="PP1" {% if student.grade == 'PP1' %}selected{% endif %}>PP1</option>
+                                    <option value="PP2" {% if student.grade == 'PP2' %}selected{% endif %}>PP2</option>
+                                    <option value="1" {% if student.grade == '1' %}selected{% endif %}>Grade 1</option>
+                                    <option value="2" {% if student.grade == '2' %}selected{% endif %}>Grade 2</option>
+                                    <option value="3" {% if student.grade == '3' %}selected{% endif %}>Grade 3</option>
+                                    <option value="4" {% if student.grade == '4' %}selected{% endif %}>Grade 4</option>
+                                    <option value="5" {% if student.grade == '5' %}selected{% endif %}>Grade 5</option>
+                                    <option value="6" {% if student.grade == '6' %}selected{% endif %}>Grade 6</option>
+                                    <option value="7" {% if student.grade == '7' %}selected{% endif %}>Grade 7</option>
+                                    <option value="8" {% if student.grade == '8' %}selected{% endif %}>Grade 8</option>
+                                    <option value="9" {% if student.grade == '9' %}selected{% endif %}>Grade 9</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Parent and Bus -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Parent <span class="text-danger">*</span></label>
+                                <select name="parent_name" class="form-select" required>
+                                    <option value="">Select Parent</option>
+                                    {% for parent in parents %}
+                                        <option value="{{ parent.name }}"
+                                                {% if student.parent.name == parent.name %}selected{% endif %}>
+                                            {{ parent.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Bus <span class="text-danger">*</span></label>
+                                <select name="bus" class="form-select" required>
+                                    <option value="">Select Bus</option>
+                                    {% for bus in buses %}
+                                        <option value="{{ bus.registration }}"
+                                                {% if student.bus.registration == bus.registration %}selected{% endif %}>
+                                            {{ bus.registration }} - {{ bus.route_name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Locations -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Pick up Location <span class="text-danger">*</span></label>
+                                <input type="text" name="pick_up" class="form-control"
+                                value="{{ student.pick_up_location }}" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Drop off Location <span class="text-danger">*</span></label>
+                                <input type="text" name="drop_off" class="form-control"
+                                value="{{ student.drop_off_location }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Emergency Contact -->
+                        <div class="mb-3">
+                            <label class="form-label">Emergency Contact <span class="text-danger">*</span></label>
+                            <input type="tel" name="emergency_contact" class="form-control"
+                            value="{{ student.emergency_contact }}" required>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox"
+                                name="is_active" id="isActive"
+                                {% if student.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="isActive">
+                                    <span class="badge {% if student.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if student.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </label>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                Uncheck to deactivate this student
+                            </small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'student_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Student Information Card -->
+            <div class="card card-shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Student Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Date Added:</dt>
+                                <dd class="col-sm-7">{{ student.created_at|date:"M d, Y" }}</dd>
+
+                                <dt class="col-sm-5">Student ID:</dt>
+                                <dd class="col-sm-7">#{{ student.id }}</dd>
+
+                                <dt class="col-sm-5">Status:</dt>
+                                <dd class="col-sm-7">
+                                    {% if student.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inactive</span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-5">Parent Email:</dt>
+                                <dd class="col-sm-7">{{ student.parent.email }}</dd>
+
+                                <dt class="col-sm-5">Parent Phone:</dt>
+                                <dd class="col-sm-7">{{ student.parent.phone_number }}</dd>
+
+                                <dt class="col-sm-5">Bus Driver:</dt>
+                                <dd class="col-sm-7">{{ student.bus.driver_name }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="card card-shadow mt-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Danger Zone
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="mb-0">
+                                <strong>Deactivate Student</strong>
+                                <br>
+                                <small class="text-muted">
+                                    This will remove {{ student.name }} from active lists.
+                                    They can be reactivated later.
+                                </small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'deactivate_student' student.id %}"
+                            class="btn btn-danger">
+                                <i class="bi bi-x-circle"></i> Deactivate
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

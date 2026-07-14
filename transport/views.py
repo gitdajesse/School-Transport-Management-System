@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -311,3 +311,91 @@ def manage_system(request):
 
     else:
         return render(request, 'transport/manage_system.html', context)
+
+
+@login_required
+def student_list(request):
+    """ Display list of all students """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can view all students.')
+        return redirect('index')
+
+    students = Student.objects.all().order_by('name')
+
+    # Count active vs inactive
+    active_students = students.filter(is_active = True).count()
+    inactive_students = students.filter(is_active = False).count()
+
+    # Group by grade
+    grades = {}
+    for student in students:
+        if student.grade not in grades:
+            grades[student.grade] = 0
+        grades[student.grade] += 1
+
+    context = {
+        'students': students,
+        'total_students': students.count(),
+        'active_students': active_students,
+        'inactive_students': inactive_students,
+        'grades': grades
+    }
+    return render(request, 'transport/student_list.html', context)
+
+
+@login_required
+def edit_student(request, student_id):
+    """ Edit a student's information """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can edit students.')
+        return redirect('index')
+
+    student = get_object_or_404(Student, id = student_id)
+
+    # Access the form
+    if request.method == 'POST':
+        # Update student
+        student.name = request.POST.get('full_name', student.name)
+        student.grade = request.POST.get('grade', student.grade)
+        student.pick_up_location = request.POST.get('pick_up', student.pick_up_location)
+        student.drop_off_location = request.POST.get('drop_off', student.drop_off_location)
+        student.emergency_contact = request.POST.get('emergency_contact', student.emergency_contact)
+
+        # Update bus if changed
+        bus_registration = request.POST.get('bus')
+        if bus_registration:
+            try:
+                bus_obj = Bus.objects.get(registration = bus_registration)
+                student.bus = bus_obj
+            except Bus.DoesNotExist:
+                messages.error(request, 'Bus not found.')
+
+        # Update parent if changed
+        parent_name = request.POST.get('parent_name')
+        if parent_name:
+            try:
+                parent = Parent.objects.get(name = parent_name)
+                student.parent = parent
+            except Parent.DoesNotExist:
+                messages.error(request, 'Parent not found.')
+
+        # Update active status
+        is_active = request.POST.get('is_active')
+        student.is_active = is_active == 'on'
+
+        student.save()
+        messages.success(request, f'Student "{ student.name }" updated successfully!')
+        return redirect('student_list')
+
+    # Get request, show edit form
+    else:
+        parents = Parent.objects.all()
+        buses = Bus.objects.all()
+
+        context = {
+            'student': student,
+            'parents': parents,
+            'buses': buses
+        }
+        return render(request, 'transport/edit_student.html', context)
+
