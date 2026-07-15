@@ -1,0 +1,58 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Confirm Deactivate
+{% endblock %}
+
+{% block body %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card card-shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        Confirm Deactivation
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-1 text-danger mb-3">
+                        <i class="bi bi-person-x"></i>
+                    </div>
+                    <h4>
+                        Are you sure you want to deactivate?
+                    </h4>
+                    <p class="text-muted">
+                        You are about to deactivate
+                        <strong>
+                            {{ student.name }}
+                        </strong>.
+                        This student will no longer appear in active lists.
+                    </p>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>
+                            Note:
+                        </strong>
+                        This action can be undone.
+                        The student's data will be preserved.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{% url 'student_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i>
+                            Cancel
+                        </a>
+                        <form method="POST" action="{% url 'deactivate_student' student.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-check-circle"></i>
+                                Yes, Deactivate
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

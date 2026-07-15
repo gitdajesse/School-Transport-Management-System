@@ -1,0 +1,49 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Confirm Reactivate
+{% endblock %}
+
+{% block body %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card card-shadow border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle"></i>
+                        Confirm Reactivation
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-1 text-success mb-3">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                    <h4>
+                        Reactivate Student?
+                    </h4>
+                    <p class="text-muted">
+                        You are about to reactivate
+                        <strong>
+                            {{ student.name }}
+                        </strong>.
+                        This student will reappear in active lists.
+                    </p>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        <a href="{% url 'student_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i>
+                            Cancel
+                        </a>
+                        <form method="POST" action="{% url 'reactivate_student' student.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i>
+                                Yes, Reactivate
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

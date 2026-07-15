@@ -16,5 +16,7 @@ urlpatterns = [
     # Student management URLs
     path('manage-system/', views.manage_system, name = 'manage_system'),
     path('students/', views.student_list, name = 'student_list'),
-    path('students/edit/<int:student_id>/', views.edit_student, name = 'edit_student')
+    path('students/edit/<int:student_id>/', views.edit_student, name = 'edit_student'),
+    path('students/deactivate/<int:student_id>/', views.deactivate_student, name = 'deactivate_student'),
+    path('students/reactivate/<int:student_id>/', views.reactivate_student, name = 'reactivate_student'),
 ]

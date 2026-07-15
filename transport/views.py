@@ -399,3 +399,45 @@ def edit_student(request, student_id):
         }
         return render(request, 'transport/edit_student.html', context)
 
+
+@login_required
+def deactivate_student(request, student_id):
+    """ Deactivate a student """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can deactivate students.')
+        return redirect('index')
+
+    student = get_object_or_404(Student, id = student_id)
+
+    if request.method == 'POST':
+        student.is_active = False
+        student.save()
+        messages.success(request, f'"{student.name}" has been deactivated.')
+        return redirect('student_list')
+
+    context = {
+        'student': student
+    }
+
+    return render(request, 'transport/confirm_deactivated.html', context)
+
+
+@login_required
+def reactivate_student(request, student_id):
+    """ Reactivate a deactivated student """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can reactivate students.')
+
+    student = get_object_or_404(Student, id = student_id)
+
+    if request.method == 'POST':
+        student.is_active = True
+        student.is_active()
+        messages.success(request, f'Student "{student.name}" has been reactivated.')
+        return redirect('student_list')
+
+    context = {
+        'student': student
+    }
+
+    return render(request, 'transport/confirm_reactivate.html', context)
