@@ -1,0 +1,57 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Bus List
+{% endblock %}
+
+{% block body %}
+    <h1>
+        Bus management system in development.....
+    </h1>
+
+    <div>
+        <h2>
+            Add Bus
+        </h2>
+
+        <form action = "{% url 'bus_list' %}" method = "POST">
+            {% csrf_token %}
+            <label>
+                Bus registration:
+                <input type = "text"
+                placeholder = "Enter the bus registration"
+                name = "bus_registration"
+                >
+            </label>
+            <label>
+                Driver Name:
+                <input type = "text"
+                placeholder = "Enter driver's name"
+                name = "driver_name"
+                >
+            </label>
+            <label>
+                Capacity:
+                <input type = "number"
+                placeholder = "Enter bus capacity"
+                name = "capacity"
+                >
+            </label>
+            <label>
+                Route name:
+                <input type = "text"
+                placeholder = "Enter route name"
+                name = "route_name"
+                >
+            </label>
+
+            <input type = "submit"
+            value = "Add bus"
+            >
+        </form>
+
+        <a href = "{% url 'manage_system' %}">
+            Management Hub
+        </a>
+    </div>
+{% endblock %}

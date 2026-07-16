@@ -443,3 +443,12 @@ def reactivate_student(request, student_id):
     }
 
     return render(request, 'transport/confirm_reactivate.html', context)
+
+
+@login_required
+def bus_list(request):
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can view all buses.')
+        return redirect('index')
+
+    return render(request, 'transport/bus_list.html')

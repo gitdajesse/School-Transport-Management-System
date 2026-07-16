@@ -19,4 +19,7 @@ urlpatterns = [
     path('students/edit/<int:student_id>/', views.edit_student, name = 'edit_student'),
     path('students/deactivate/<int:student_id>/', views.deactivate_student, name = 'deactivate_student'),
     path('students/reactivate/<int:student_id>/', views.reactivate_student, name = 'reactivate_student'),
+
+    # Bus management URLs
+    path('buses/', views.bus_list, name = 'bus_list'),
 ]
