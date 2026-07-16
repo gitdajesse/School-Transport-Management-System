@@ -1,234 +1,634 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}Student List - School Transport{% endblock %}
+{% block title %}
+    Student List - School Transport
+{% endblock %}
 
 {% block body %}
+
+<div class="container-fluid">
+
+    <!-- Page Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
+
         <h1 class="page-title mb-0">
-            <i class="bi bi-people"></i>
+            <i class="bi bi-people-fill text-primary"></i>
             Student List
         </h1>
-        <a href="{% url 'manage_system' %}" class="btn btn-primary">
+
+        <button class="btn btn-primary"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#addStudentForm"
+                aria-expanded="false"
+                aria-controls="addStudentForm">
+
             <i class="bi bi-person-plus"></i>
             Add Student
-        </a>
+
+        </button>
+
+    </div>
+
+    <!-- Hidden Form -->
+    <div class="collapse mb-4" id="addStudentForm">
+
+        <div class="card shadow border-0">
+
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+
+                <h5 class="mb-0">
+                    <i class="bi bi-person-plus-fill"></i>
+                    Add Student
+                </h5>
+
+                <button class="btn btn-sm btn-light"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#addStudentForm">
+
+                    <i class="bi bi-x-lg"></i>
+
+                </button>
+
+            </div>
+
+            <div class="card-body">
+
+                <form method="POST" action="{% url 'student_list' %}">
+
+                    {% csrf_token %}
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label">
+                                Full Name
+                            </label>
+
+                            <input
+                                type="text"
+                                name="full_name"
+                                class="form-control"
+                                placeholder="Enter student's full name"
+                                value="{{ form_data.full_name|default:'' }}"
+                                required>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label">
+                                Grade
+                            </label>
+
+                            <select
+                                name="grade"
+                                class="form-select"
+                                required>
+
+                                <option value="">Select Grade</option>
+
+                                <option value="PP1"
+                                    {% if form_data.grade == 'PP1' %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    PP1
+                                </option>
+
+                                <option value="PP2"
+                                    {% if form_data.grade == 'PP2' %}
+                                        selected
+                                    {% endif %}
+                                >
+                                    PP2
+                                </option>
+
+                                <option value="1">Grade 1</option>
+                                <option value="2">Grade 2</option>
+                                <option value="3">Grade 3</option>
+                                <option value="4">Grade 4</option>
+                                <option value="5">Grade 5</option>
+                                <option value="6">Grade 6</option>
+                                <option value="7">Grade 7</option>
+                                <option value="8">Grade 8</option>
+                                <option value="9">Grade 9</option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label">
+                                Parent
+                            </label>
+
+                            <select
+                                name="parent_name"
+                                class="form-select"
+                                required>
+
+                                <option value="">
+                                    Select Parent
+                                </option>
+
+                                {% for parent in parents %}
+
+                                    <option
+                                        value="{{ parent.name }}"
+                                        {% if form_data.parent_name == parent.name %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ parent.name }}
+                                    </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                            {% if not parents %}
+                                <small class="text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    No parents registered yet. Please register a parent first.
+                                </small>
+                            {% endif %}
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            <label class="form-label">
+                                Bus
+                            </label>
+
+                            <select
+                                name="bus"
+                                class="form-select"
+                                required>
+
+                                <option value="">
+                                    Select Bus
+                                </option>
+
+                                {% for bus in buses %}
+
+                                    <option
+                                        value="{{ bus.registration }}"
+                                        {% if form_data.bus == bus.registration %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ bus.registration }} - {{ bus.route_name }}
+                                    </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                            {% if not buses %}
+                            <small class="text-warning">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                No buses registered yet. Please register a bus first.
+                            </small>
+                            {% endif %}
+
+                        </div>
+
+                        <div class='col-md-6 mb-3'>
+
+                            <label class='form-label'>
+                                Pick Up Location
+                            </label>
+
+                            <input
+                                type='text'
+                                name='pick_up'
+                                class='form-control'
+                                placeholder='Enter pickup location'
+                                value='{{ form_data.pick_up|default:"" }}'
+                                required>
+
+                        </div>
+
+                        <div class='col-md-6 mb-3'>
+
+                            <label class='form-label'>
+                                Drop Off Location
+                            </label>
+
+                            <input
+                                type='text'
+                                name='drop_off'
+                                class='form-control'
+                                placeholder='Enter drop-off location'
+                                value='{{ form_data.drop_off|default:"" }}'
+                                required>
+
+                        </div>
+
+                        <div class='col-md-12 mb-3'>
+
+                            <label class='form-label'>
+                                Emergency Contact
+                            </label>
+
+                            <input
+                                type='tel'
+                                name='emergency_contact'
+                                class='form-control'
+                                placeholder='Enter emergency contact phone number'
+                                value='{{ form_data.emergency_contact|default:"" }}'
+                                required>
+
+                        </div>
+
+                    </div>
+
+                    <div class='d-flex justify-content-end gap-2'>
+
+                        <button type='reset'
+                                class='btn btn-outline-secondary'>
+
+                            <i class='bi bi-arrow-counterclockwise'></i>
+                            Reset
+
+                        </button>
+
+                        <button type='submit'
+                                class='btn btn-primary'>
+
+                            <i class='bi bi-check-circle'></i>
+                            Save Student
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-3 col-6">
-            <div class="card card-shadow bg-primary text-white">
-                <div class="card-body text-center py-3">
-                    <h5 class="card-title">
+    <div class='row g-4 mb-4'>
+
+        <div class='col-md-3 col-6'>
+
+            <div class='card shadow border-0 bg-primary text-white h-100'>
+
+                <div class='card-body text-center'>
+
+                    <h6 class='mt-3 text-uppercase'>
                         Total
-                    </h5>
-                    <h2 class="display-4 mb-0">
+                    </h6>
+
+                    <h2 class='fw-bold'>
                         {{ total_students }}
                     </h2>
+
                 </div>
+
             </div>
+
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card card-shadow bg-success text-white">
-                <div class="card-body text-center py-3">
-                    <h5 class="card-title">
+
+        <div class='col-md-3 col-6'>
+
+            <div class='card shadow border-0 bg-success text-white h-100'>
+
+                <div class='card-body text-center'>
+
+                    <h6 class='mt-3 text-uppercase'>
                         Active
-                    </h5>
-                    <h2 class="display-4 mb-0">
+                    </h6>
+
+                    <h2 class='fw-bold'>
                         {{ active_students }}
                     </h2>
+
                 </div>
+
             </div>
+
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card card-shadow bg-danger text-white">
-                <div class="card-body text-center py-3">
-                    <h5 class="card-title">
+
+        <div class='col-md-3 col-6'>
+
+            <div class='card shadow border-0 bg-danger text-white h-100'>
+
+                <div class='card-body text-center'>
+
+                    <h6 class='mt-3 text-uppercase'>
                         Inactive
-                    </h5>
-                    <h2 class="display-4 mb-0">
+                    </h6>
+
+                    <h2 class='fw-bold'>
                         {{ inactive_students }}
                     </h2>
+
                 </div>
+
             </div>
+
         </div>
-        <div class="col-md-3 col-6">
-            <div class="card card-shadow bg-info text-white">
-                <div class="card-body text-center py-3">
-                    <h5 class="card-title">
+
+        <div class='col-md-3 col-6'>
+
+            <div class='card shadow border-0 bg-info text-white h-100'>
+
+                <div class='card-body text-center'>
+
+                    <h6 class='mt-3 text-uppercase'>
                         Grades
-                    </h5>
-                    <h2 class="display-4 mb-0">
+                    </h6>
+
+                    <h2 class='fw-bold'>
                         {{ grades|length }}
                     </h2>
+
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
     <!-- Grade Distribution -->
     {% if grades %}
-        <div class="card card-shadow mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-pie-chart"></i>
+
+        <div class='card shadow border-0 mb-4'>
+
+            <div class='card-header bg-white'>
+
+                <h5 class='mb-0'>
+
+                    <i class='bi bi-pie-chart-fill text-primary'></i>
                     Grade Distribution
-                </h6>
+
+                </h5>
+
             </div>
-            <div class="card-body">
-                <div class="row g-2">
+
+            <div class='card-body'>
+
+                <div class='d-flex flex-wrap gap-2'>
+
                     {% for grade, count in grades.items %}
-                        <div class="col-auto">
-                            <span class="badge bg-secondary">
-                                Grade {{ grade }}: {{ count }}
-                            </span>
-                        </div>
+
+                        <span class='badge bg-secondary fs-6 px-3 py-2'>
+
+                            Grade {{ grade }} : {{ count }}
+
+                        </span>
+
                     {% endfor %}
+
                 </div>
+
             </div>
+
         </div>
+
     {% endif %}
 
     <!-- Student Table -->
-    <div class="card card-shadow">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">
-                <i class="bi bi-list"></i>
+    <div class='card shadow border-0'>
+
+        <div class='card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2'>
+
+            <h5 class='mb-0'>
+
+                <i class='bi bi-list-ul text-primary'></i>
                 All Students
-            </h6>
-            <div>
-                <span class="badge bg-primary">
+
+            </h5>
+
+            <div class='d-flex gap-2 flex-wrap'>
+
+                <span class='badge bg-primary fs-6'>
                     {{ total_students }}
                 </span>
-                <span class="badge bg-success">
+
+                <span class='badge bg-success fs-6'>
                     {{ active_students }}
                 </span>
-                <span class="badge bg-danger">
+
+                <span class='badge bg-danger fs-6'>
                     {{ inactive_students }}
                 </span>
+
             </div>
+
         </div>
-        <div class="card-body p-0">
+
+        <div class='card-body p-0'>
+
             {% if students %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+
+                <div class='table-responsive'>
+
+                    <table class='table table-hover align-middle mb-0'>
+
+                        <thead class='table-light'>
+
                             <tr>
-                                <th>
-                                    #
-                                </th>
-                                <th>
-                                    Name
-                                </th>
-                                <th>
-                                    Grade
-                                </th>
-                                <th>
-                                    Parent
-                                </th>
-                                <th>
-                                    Bus
-                                </th>
-                                <th>
-                                    Pickup
-                                </th>
-                                <th>
-                                    Status
-                                </th>
-                                <th class="text-center">
-                                    Actions
-                                </th>
+
+                                <th>#</th>
+                                <th>Name</th>
+                                <th>Grade</th>
+                                <th>Parent</th>
+                                <th>Bus</th>
+                                <th>Pickup</th>
+                                <th>Status</th>
+                                <th class='text-center'>Actions</th>
+
                             </tr>
+
                         </thead>
+
                         <tbody>
+
                             {% for student in students %}
+
                                 <tr>
+
                                     <td>
-                                        {{ forloop.counter }}
+
+                                        <strong>
+                                            {{ forloop.counter }}
+                                        </strong>
+
                                     </td>
+
                                     <td>
-                                        <i class="bi bi-person-fill text-primary"></i>
-                                        {{ student.name }}
-                                    </td>
-                                    <td>
-                                        {{ student.grade }}
-                                    </td>
-                                    <td>
-                                        {{ student.parent.name }}
-                                    </td>
-                                    <td>
-                                        {{ student.bus.registration }}
-                                    </td>
-                                    <td>
-                                        {{ student.pick_up_location|truncatechars:20 }}
-                                    </td>
-                                    <td>
-                                        {% if student.is_active %}
-                                            <span class="badge bg-success">
-                                                Active
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-danger">
-                                                Inactive
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="d-flex justify-content-center gap-1">
-                                            <a href="{% url 'edit_student' student.id %}"
-                                            class="btn btn-sm btn-outline-primary"
-                                            title="Edit Student">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            {% if student.is_active %}
-                                                <a href="{% url 'deactivate_student' student.id %}"
-                                                class="btn btn-sm btn-outline-danger"
-                                                title="Deactivate Student">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </a>
-                                            {% else %}
-                                                <a href="{% url 'reactivate_student' student.id %}"
-                                                class="btn btn-sm btn-outline-success"
-                                                title="Reactivate Student">
-                                                    <i class="bi bi-check-circle"></i>
-                                                </a>
-                                            {% endif %}
+
+                                        <div class='d-flex align-items-center gap-2'>
+
+                                            <div class='rounded-circle bg-primary text-white d-flex align-items-center justify-content-center'
+                                                style='width:36px;height:36px;'>
+
+                                                <i class='bi bi-person-fill'></i>
+
+                                            </div>
+
+                                            <strong>
+                                                {{ student.name }}
+                                            </strong>
+
                                         </div>
+
                                     </td>
+
+                                    <td>
+
+                                        <span class='badge bg-light text-dark border'>
+                                            {{ student.grade }}
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        {{ student.parent.name }}
+
+                                    </td>
+
+                                    <td>
+
+                                        <span class='badge bg-info text-dark'>
+                                            {{ student.bus.registration }}
+                                        </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        {{ student.pick_up_location|truncatechars:20 }}
+
+                                    </td>
+
+                                    <td>
+
+                                        {% if student.is_active %}
+
+                                            <span class='badge bg-success'>
+
+                                                <i class='bi bi-check-circle'></i>
+                                                Active
+
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class='badge bg-danger'>
+
+                                                <i class='bi bi-x-circle'></i>
+                                                Inactive
+
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                    <td class='text-center'>
+
+                                        <div class='btn-group'>
+
+                                            <a href='{% url "edit_student" student.id %}'
+                                            class='btn btn-sm btn-outline-primary'
+                                            title='Edit Student'>
+
+                                                <i class='bi bi-pencil'></i>
+
+                                            </a>
+
+                                            {% if student.is_active %}
+
+                                                <a href='{% url "deactivate_student" student.id %}'
+                                                class='btn btn-sm btn-outline-danger'
+                                                title='Deactivate Student'>
+
+                                                    <i class='bi bi-x-circle'></i>
+
+                                                </a>
+
+                                            {% else %}
+
+                                                <a href='{% url "reactivate_student" student.id %}'
+                                                class='btn btn-sm btn-outline-success'
+                                                title='Reactivate Student'>
+
+                                                    <i class='bi bi-check-circle'></i>
+
+                                                </a>
+
+                                            {% endif %}
+
+                                        </div>
+
+                                    </td>
+
                                 </tr>
+
                             {% endfor %}
+
                         </tbody>
+
                     </table>
+
                 </div>
+
             {% else %}
-                <div class="text-center py-5">
-                    <i class="bi bi-people display-1 text-muted"></i>
-                    <h5 class="mt-3">
+
+                <div class='text-center py-5'>
+
+                    <i class='bi bi-people-fill display-1 text-muted'></i>
+
+                    <h4 class='mt-3'>
                         No Students Registered
-                    </h5>
-                    <p class="text-muted">
+                    </h4>
+
+                    <p class='text-muted'>
                         Get started by adding your first student.
                     </p>
-                    <a href="{% url 'manage_system' %}" class="btn btn-primary">
-                        <i class="bi bi-person-plus"></i>
-                        Add Student
-                    </a>
+
                 </div>
+
             {% endif %}
+
         </div>
+
     </div>
 
     <!-- Quick Actions -->
-    <div class="mt-4">
-        <div class="d-flex gap-2 flex-wrap">
-            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-speedometer2"></i>
-                Dashboard
-            </a>
-            <a href="{% url 'manage_system' %}" class="btn btn-outline-primary">
-                <i class="bi bi-person-plus"></i> 
-                Add Student
-            </a>
+    <div class='mt-4'>
+
+        <div class='card shadow-sm border-0'>
+
+            <div class='card-body d-flex gap-2 flex-wrap'>
+
+                <a href='{% url "manage_system" %}'
+                class='btn btn-outline-secondary'>
+
+                    <i class='bi bi-speedometer2'></i>
+                    Management Hub
+
+                </a>
+
+            </div>
+
         </div>
+
     </div>
+
+</div>
+
 {% endblock %}

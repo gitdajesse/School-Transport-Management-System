@@ -198,8 +198,18 @@ def admin_dashboard(request):
 def manage_system(request):
     # Only allow admins
     if request.user.user_type != 'admin':
-            messages.error(request, 'Access denied. You are not an admin.')
-            return redirect('index')
+        messages.error(request, 'Access denied. You are not an admin.')
+        return redirect('index')
+
+    return render(request, 'transport/manage_system.html')
+
+
+@login_required
+def student_list(request):
+    """ Display list of all students """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can view all students.')
+        return redirect('index')
 
     # Get all parents and buses for dropdowns
     parents = Parent.objects.all()
@@ -210,6 +220,7 @@ def manage_system(request):
         'buses': buses,
     }
 
+    # Handle form submission
     if request.method == "POST":
         # Get form data
         full_name = request.POST.get('full_name')
@@ -220,73 +231,73 @@ def manage_system(request):
         drop_off = request.POST.get('drop_off')
         emergency_contact = request.POST.get('emergency_contact')
 
+        # Save entered data so form does not reset
         context['form_data'] = {
             'full_name': full_name,
             'grade': grade,
             'parent_name': parent_name,
-            'bus': bus_obj,
+            'bus': bus_registration,
             'pick_up': pick_up,
             'drop_off': drop_off,
-            'emergency_contact': 'emergency_contact',
+            'emergency_contact': emergency_contact,
         }
 
         # Validation
         if not full_name:
             messages.error(request, "Please fill in the student's name.")
             context['form_data'] = request.POST
-            return render(request, 'transport/manage_system.html', context)
+            return render(request, 'transport/student_list.html', context)
         if not grade:
             messages.error(request, "Please fill in the student's grade.")
             context['form_data'] = request.POST
-            return render(request, 'transport/manage_system.html', context)
+            return render(request, 'transport/student_list.html', context)
         if not parent_name:
             messages.error(request, "Please select a parent for the student")
             context['form_data'] = request.POST
-            return render(request, 'transport/manage_system.html', context)
+            return render(request, 'transport/student_list.html', context)
         if not bus_registration:
             messages.error(request, "Please select a bus for the student")
             context['form_data'] = request.POST
-            return render(request, 'transport/manage_system.html', context)
+            return render(request, 'transport/student_list.html', context)
         if not pick_up:
             messages.error(request, "Please fill in the pick up location")
             context['form_data'] = request.POST
-            return render(request, 'transport/manage_system.html', context)
+            return render(request, 'transport/student_list.html', context)
         if not drop_off:
             messages.error(request, "Please fill in the drop off location")
             context['form_data'] = request.POST
-            return render(request, 'transport/manage_system.html', context)
+            return render(request, 'transport/student_list.html', context)
         if not emergency_contact:
             messages.error(request, "Please fill in the student's emergency contact")
             context['form_data'] = request.POST
-            return render(request, 'transport/manage_system.html', context)
+            return render(request, 'transport/student_list.html', context)
 
         try:
-            try:
-                # Find the parent
-                parent = Parent.objects.get(name = parent_name)
-            except Parent.DoesNotExist:
-                messages.error(request, 'Parent not found. Please register the parent first.')
-                context['form_data'] = request.POST
-                return render(request, 'transport/manage_system.html', context)
+            # Find the parent
+            parent = Parent.objects.get(name = parent_name)
+        except Parent.DoesNotExist:
+            messages.error(request, 'Parent not found. Please register the parent first.')
+            return render(request, 'transport/student_list.html', context)
 
-            try:
-                # Find the bus
-                bus_obj = Bus.objects.get(registration = bus_registration)
-            except Bus.DoesNotExist:
-                messages.error(request, 'Bus not found. Please register the bus first.')
-                context['form_data'] = request.POST
-                return render(request, 'transport/manage_system.html, context')
+        try:
+            # Find the bus
+            bus_obj = Bus.objects.get(registration = bus_registration)
+        except Bus.DoesNotExist:
+            messages.error(request, 'Bus not found. Please register the bus first.')
+            return render(request, 'transport/student_list.html', context)
 
-            # Check if student already exists
-            existing_student = Student.objects.filter(
-                name = full_name,
-                parent = parent,
-                is_active = True
-            ).first()
+        # Check if student already exists
+        existing_student = Student.objects.filter(
+            name = full_name,
+            parent = parent,
+            is_active = True
+        ).first()
 
-            if existing_student:
-                messages.warning(request, 'Student already exists for this parent.')
+        if existing_student:
+            messages.warning(request, 'Student already exists for this parent.')
+            return redirect('student_list')
 
+        try:
             # Create student
             student = Student.objects.create(
                 name = full_name,
@@ -306,41 +317,32 @@ def manage_system(request):
 
         except Exception as e:
             messages.error(request, f'Error adding student: {str(e)}')
-            context['form_data'] = request.POST
-            return render(request, 'transport/manage_system.html', context)
+            return render(request, 'transport/student_list.html', context)
 
     else:
-        return render(request, 'transport/manage_system.html', context)
+        students = Student.objects.all().order_by('name')
 
+        # Count active vs inactive
+        active_students = students.filter(is_active = True).count()
+        inactive_students = students.filter(is_active = False).count()
 
-@login_required
-def student_list(request):
-    """ Display list of all students """
-    if request.user.user_type != 'admin':
-        messages.error(request, 'Access denied. Only admins can view all students.')
-        return redirect('index')
+        # Group by grade
+        grades = {}
 
-    students = Student.objects.all().order_by('name')
+        for student in students:
+            if student.grade not in grades:
+                grades[student.grade] = 0
+            grades[student.grade] += 1
 
-    # Count active vs inactive
-    active_students = students.filter(is_active = True).count()
-    inactive_students = students.filter(is_active = False).count()
+        context.update({
+            'students': students,
+            'total_students': students.count(),
+            'active_students': active_students,
+            'inactive_students': inactive_students,
+            'grades': grades
+        })
 
-    # Group by grade
-    grades = {}
-    for student in students:
-        if student.grade not in grades:
-            grades[student.grade] = 0
-        grades[student.grade] += 1
-
-    context = {
-        'students': students,
-        'total_students': students.count(),
-        'active_students': active_students,
-        'inactive_students': inactive_students,
-        'grades': grades
-    }
-    return render(request, 'transport/student_list.html', context)
+        return render(request, 'transport/student_list.html', context)
 
 
 @login_required
