@@ -164,6 +164,7 @@ def logout_view(request):
 
 @login_required
 def parent_dashboard(request):
+    """ Dashboard for the parent to have an overview of the system """
     if request.user.user_type != 'parent':
         messages.error(request, 'Access denied. You are not a parent.')
         return redirect('index')
@@ -172,6 +173,7 @@ def parent_dashboard(request):
 
 @login_required
 def assistant_dashboard(request):
+    """ Dashboard for the assistant to have an overview of the system. """
     if request.user.user_type != 'assistant':
         messages.error(request, 'Access denied. You are not an assistant.')
         return redirect('index')
@@ -181,6 +183,7 @@ def assistant_dashboard(request):
 
 @login_required
 def admin_dashboard(request):
+    """ Dashboard for the admin to have an overview of the system """
     if request.user.user_type != 'admin':
         messages.error(request, 'Access denied. You are not an admin.')
         return redirect('index')
@@ -196,6 +199,7 @@ def admin_dashboard(request):
 
 @login_required
 def manage_system(request):
+    """ Central location to manage the models """
     # Only allow admins
     if request.user.user_type != 'admin':
         messages.error(request, 'Access denied. You are not an admin.')
@@ -206,7 +210,7 @@ def manage_system(request):
 
 @login_required
 def student_list(request):
-    """ Display list of all students """
+    """ Display list of all students and add student """
     if request.user.user_type != 'admin':
         messages.error(request, 'Access denied. Only admins can view all students.')
         return redirect('index')
@@ -445,10 +449,42 @@ def reactivate_student(request, student_id):
     return render(request, 'transport/confirm_reactivate.html', context)
 
 
+
 @login_required
 def bus_list(request):
+    """ Add a bus and see bus statistics """
     if request.user.user_type != 'admin':
         messages.error(request, 'Access denied. Only admins can view all buses.')
         return redirect('index')
 
-    return render(request, 'transport/bus_list.html')
+    # Get form data
+    if request.method == 'POST':
+        bus_registration = request.POST.get('bus_registration')
+        driver_name = request.POST.get('driver_name')
+        capacity = request.POST.get('capacity')
+        route_name = request.POST.get('route_name')
+
+        # Validation
+        if not bus_registration:
+            messages.error(request, 'Please enter the bus registration.')
+            return redirect('bus_list')
+        if not driver_name:
+            messages.error(request, "Please enter the driver's name.")
+            return redirect('bus_list')
+        if not capacity:
+            messages.error(request, 'Please enter the maximum capacity the bus has.')
+            return redirect('bus_list')
+        if not route_name:
+            messages.error(request, 'Please enter the route name the bus will be using.')
+            return redirect('bus_list')
+
+        # Create bus
+        bus = Bus.objects.create(
+            registration = bus_registration,
+            driver_name = driver_name,
+            capacity = capacity,
+            route_name = route_name
+        )
+
+    else:
+        return render(request, 'transport/bus_list.html')
