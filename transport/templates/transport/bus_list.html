@@ -1,57 +1,347 @@
 {% extends 'transport/layout.html' %}
 
 {% block title %}
-    Bus List
+    Bus Management - School Transport
 {% endblock %}
 
 {% block body %}
-    <h1>
-        Bus management system in development.....
-    </h1>
-
-    <div>
-        <h2>
-            Add Bus
-        </h2>
-
-        <form action = "{% url 'bus_list' %}" method = "POST">
-            {% csrf_token %}
-            <label>
-                Bus registration:
-                <input type = "text"
-                placeholder = "Enter the bus registration"
-                name = "bus_registration"
-                >
-            </label>
-            <label>
-                Driver Name:
-                <input type = "text"
-                placeholder = "Enter driver's name"
-                name = "driver_name"
-                >
-            </label>
-            <label>
-                Capacity:
-                <input type = "number"
-                placeholder = "Enter bus capacity"
-                name = "capacity"
-                >
-            </label>
-            <label>
-                Route name:
-                <input type = "text"
-                placeholder = "Enter route name"
-                name = "route_name"
-                >
-            </label>
-
-            <input type = "submit"
-            value = "Add bus"
-            >
-        </form>
-
-        <a href = "{% url 'manage_system' %}">
-            Management Hub
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-bus-front"></i>
+            Bus Management
+        </h1>
+        <div>
+            <a href="{% url 'manage_system' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Hub
+            </a>
+        </div>
     </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card card-shadow bg-primary text-white">
+                <div class="card-body text-center py-3">
+                    <h5 class="card-title">
+                        Total Buses
+                    </h5>
+                    <h2 class="display-4 mb-0">
+                        {{ total_buses }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card card-shadow bg-success text-white">
+                <div class="card-body text-center py-3">
+                    <h5 class="card-title">
+                        Active
+                    </h5>
+                    <h2 class="display-4 mb-0">
+                        {{ active_buses }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card card-shadow bg-danger text-white">
+                <div class="card-body text-center py-3">
+                    <h5 class="card-title">
+                        Inactive
+                    </h5>
+                    <h2 class="display-4 mb-0">
+                        {{ inactive_buses }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card card-shadow bg-info text-white">
+                <div class="card-body text-center py-3">
+                    <h5 class="card-title">
+                        Utilization
+                    </h5>
+                    <h2 class="display-4 mb-0">
+                        {{ buses|length }}
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Bus Form (Collapsible) -->
+    <div class="mb-4">
+        <button class="btn btn-primary mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#addBusForm">
+            <i class="bi bi-plus-lg"></i>
+            Add New Bus
+        </button>
+
+        <div class="collapse" id="addBusForm">
+            <div class="card card-shadow border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bus-front"></i>
+                        Add Bus
+                    </h5>
+                    <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#addBusForm">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'bus_list' %}">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Bus Registration
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="text"
+                                       name="bus_registration"
+                                       class="form-control"
+                                       placeholder="e.g., KBZ 123A"
+                                       required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Driver Name
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="text"
+                                       name="driver_name"
+                                       class="form-control"
+                                       placeholder="Enter driver's full name"
+                                       required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Capacity
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="number"
+                                       name="capacity"
+                                       class="form-control"
+                                       placeholder="Maximum number of students"
+                                       min="1"
+                                       required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Route Name
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="text"
+                                       name="route_name"
+                                       class="form-control"
+                                       placeholder="e.g., Route A - Morning"
+                                       required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-lg"></i>
+                            Add Bus
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bus List Table -->
+    <div class="card card-shadow">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-list"></i>
+                All Buses
+            </h6>
+            <div>
+                <span class="badge bg-primary">
+                    {{ total_buses }}
+                </span>
+                <span class="badge bg-success">
+                    {{ active_buses }}
+                </span>
+                <span class="badge bg-danger">
+                    {{ inactive_buses }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if buses %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>
+                                    #
+                                </th>
+                                <th>
+                                    Registration
+                                </th>
+                                <th>
+                                    Driver
+                                </th>
+                                <th>
+                                    Route
+                                </th>
+                                <th>
+                                    Capacity
+                                </th>
+                                <th>
+                                    Students
+                                </th>
+                                <th>
+                                    Utilization
+                                </th>
+                                <th>
+                                    Status
+                                </th>
+                                <th class="text-center">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bus in buses %}
+                                <tr>
+                                    <td>
+                                        {{ forloop.counter }}
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-bus-front text-primary"></i>
+                                        <strong>
+                                            {{ bus.registration }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        {{ bus.driver_name }}
+                                    </td>
+                                    <td>
+                                        {{ bus.route_name }}
+                                    </td>
+                                    <td>
+                                        {{ bus.capacity }}
+                                    </td>
+                                    <td>
+                                        {{ bus.student_count }}
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height:20px;">
+                                            <div class="progress-bar {{ bus.progress_color }}"
+                                                role="progressbar"
+                                                style="width: {{ bus.utilization }};"
+                                                aria-valuenow="{{ bus.utilization_percent }}"
+                                                aria-valuemin="0"
+                                                aria-valuemax="100">
+                                                {{ bus.utilization }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if bus.is_active %}
+                                            <span class="badge bg-success">
+                                                Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                Inactive
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-center gap-1">
+                                            <a href="{% url 'bus_detail' bus.id %}"
+                                               class="btn btn-sm btn-outline-info"
+                                               title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'edit_bus' bus.id %}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Edit Bus">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            {% if bus.is_active %}
+                                                <a href="{% url 'deactivate_bus' bus.id %}"
+                                                   class="btn btn-sm btn-outline-danger"
+                                                   title="Deactivate Bus">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </a>
+                                            {% else %}
+                                                <a href="{% url 'reactivate_bus' bus.id %}"
+                                                   class="btn btn-sm btn-outline-success"
+                                                   title="Reactivate Bus">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-bus-front display-1 text-muted"></i>
+                    <h5 class="mt-3">
+                        No Buses Registered
+                    </h5>
+                    <p class="text-muted">
+                        Get started by adding your first bus.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class='mt-4'>
+
+        <div class='card shadow-sm border-0'>
+
+            <div class='card-body d-flex gap-2 flex-wrap'>
+
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-speedometer2"></i>
+                    Dashboard
+                </a>
+                <a href="{% url 'manage_system' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                    Management Hub
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- JavaScript to keep form open on errors -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorMessages = document.querySelectorAll('.alert-danger, .alert-warning');
+            if (errorMessages.length > 0) {
+                const form = document.getElementById('addBusForm');
+                if (form) {
+                    form.classList.add('show');
+                }
+            }
+        });
+    </script>
 {% endblock %}

@@ -449,13 +449,40 @@ def reactivate_student(request, student_id):
     return render(request, 'transport/confirm_reactivate.html', context)
 
 
-
 @login_required
 def bus_list(request):
     """ Add a bus and see bus statistics """
     if request.user.user_type != 'admin':
         messages.error(request, 'Access denied. Only admins can view all buses.')
         return redirect('index')
+
+    # Get all buses
+    buses = Bus.objects.all().order_by('registration')
+
+    # Calculate statistics
+    total_buses = buses.count()
+    active_buses = buses.filter(is_active = True).count()
+    inactive_buses = buses.filter(is_active = False).count()
+
+    # Calculate capacity utilization for each bus
+    for bus in buses:
+        student_count = Student.objects.filter(bus = bus, is_active = True).count()
+        bus.utilization = f"{(student_count / bus.capacity * 100):.0f}%" if bus.capacity > 0 else "N/A"
+        bus.student_count = student_count
+
+        if bus.utilization > 90:
+            bus.progress_color = 'bg-danger'
+        elif bus.utilization > 70:
+            bus.progress_color = 'bg-warning'
+        else:
+            bus.progress_color = 'bg-success'
+
+    context = {
+        'buses': buses,
+        'total_buses': total_buses,
+        'active_buses': active_buses,
+        'inactive_buses': inactive_buses
+    }
 
     # Get form data
     if request.method == 'POST':
@@ -467,24 +494,42 @@ def bus_list(request):
         # Validation
         if not bus_registration:
             messages.error(request, 'Please enter the bus registration.')
-            return redirect('bus_list')
+            return render(request, 'transport/bus_list.html', context)
         if not driver_name:
             messages.error(request, "Please enter the driver's name.")
-            return redirect('bus_list')
-        if not capacity:
-            messages.error(request, 'Please enter the maximum capacity the bus has.')
-            return redirect('bus_list')
+            return render(request, 'transport/bus_list.html', context)
         if not route_name:
             messages.error(request, 'Please enter the route name the bus will be using.')
+            return render(request, 'transport/bus_list.html', context)
+        try:
+            capacity = int(capacity)
+            if capacity <= 0:
+                messages.error(request, 'Capacity must be a positive number')
+                return render(request, 'transport/bus_list.html', context)
+        except ValueError:
+            messages.error(request, 'Capacity must be a number.')
+            return render(request, 'transport/bus_list.html', context)
+
+        # Check for duplicate registration
+        if Bus.objects.filter(registration = bus_registration).exists():
+            messages.error(request, f'Bus {bus_registration} already exists.')
+            return render(request, 'transport/bus_list.html', context)
+
+        try:
+            # Create bus
+            bus = Bus.objects.create(
+                registration = bus_registration,
+                driver_name = driver_name,
+                capacity = capacity,
+                route_name = route_name,
+                is_active = True
+            )
+            messages.success(request, f'Bus "{bus_registration}" added successfully!')
             return redirect('bus_list')
 
-        # Create bus
-        bus = Bus.objects.create(
-            registration = bus_registration,
-            driver_name = driver_name,
-            capacity = capacity,
-            route_name = route_name
-        )
+        except Exception as e:
+            messages.error(request, f'Error adding bus: {str(e)}')
+            return render(request, 'transport/bus_list.html', context)
 
     else:
-        return render(request, 'transport/bus_list.html')
+        return render(request, 'transport/bus_list.html', context)

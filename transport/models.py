@@ -50,6 +50,8 @@ class Bus(models.Model):
     driver_name = models.CharField(max_length = 200)
     capacity = models.IntegerField()
     route_name = models.CharField(max_length = 100)
+    is_active = models.BooleanField(default = True)
+    created_at = models.DateTimeField(auto_now_add = True)
 
     def __str__(self):
         return f"Bus {self.registration} - {self.route_name}"

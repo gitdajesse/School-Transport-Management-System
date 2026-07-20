@@ -30,6 +30,9 @@
                         <a href="{% url 'bus_list' %}" class="list-group-item list-group-item-action">
                             <i class="bi bi-bus-front text-success"></i>
                             Manage Buses
+                            <span class="badge bg-primary float-end">
+                                {{ total_buses|default:0 }}
+                            </span>
                         </a>
                         <a href="#" class="list-group-item list-group-item-action">
                             <i class="bi bi-person-heart text-info"></i>
