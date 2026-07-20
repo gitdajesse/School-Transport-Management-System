@@ -13,9 +13,104 @@
 
         <h1 class="page-title mb-0">
             <i class="bi bi-people-fill text-primary"></i>
-            Student List
+            Student Management
         </h1>
 
+        <div>
+            <a href="{% url 'manage_system' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Hub
+            </a>
+        </div>
+
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class='row g-4 mb-4'>
+
+        <div class='col-md-3 col-6'>
+
+            <div class='card shadow border-0 bg-primary text-white h-100'>
+
+                <div class='card-body text-center'>
+
+                    <h6 class='mt-3 text-uppercase'>
+                        Total
+                    </h6>
+
+                    <h2 class='fw-bold'>
+                        {{ total_students }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class='col-md-3 col-6'>
+
+            <div class='card shadow border-0 bg-success text-white h-100'>
+
+                <div class='card-body text-center'>
+
+                    <h6 class='mt-3 text-uppercase'>
+                        Active
+                    </h6>
+
+                    <h2 class='fw-bold'>
+                        {{ active_students }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class='col-md-3 col-6'>
+
+            <div class='card shadow border-0 bg-danger text-white h-100'>
+
+                <div class='card-body text-center'>
+
+                    <h6 class='mt-3 text-uppercase'>
+                        Inactive
+                    </h6>
+
+                    <h2 class='fw-bold'>
+                        {{ inactive_students }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class='col-md-3 col-6'>
+
+            <div class='card shadow border-0 bg-info text-white h-100'>
+
+                <div class='card-body text-center'>
+
+                    <h6 class='mt-3 text-uppercase'>
+                        Grades
+                    </h6>
+
+                    <h2 class='fw-bold'>
+                        {{ grades|length }}
+                    </h2>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="mb-4">
         <button class="btn btn-primary"
                 type="button"
                 data-bs-toggle="collapse"
@@ -27,7 +122,6 @@
             Add Student
 
         </button>
-
     </div>
 
     <!-- Hidden Form -->
@@ -275,91 +369,6 @@
 
     </div>
 
-    <!-- Statistics Cards -->
-    <div class='row g-4 mb-4'>
-
-        <div class='col-md-3 col-6'>
-
-            <div class='card shadow border-0 bg-primary text-white h-100'>
-
-                <div class='card-body text-center'>
-
-                    <h6 class='mt-3 text-uppercase'>
-                        Total
-                    </h6>
-
-                    <h2 class='fw-bold'>
-                        {{ total_students }}
-                    </h2>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class='col-md-3 col-6'>
-
-            <div class='card shadow border-0 bg-success text-white h-100'>
-
-                <div class='card-body text-center'>
-
-                    <h6 class='mt-3 text-uppercase'>
-                        Active
-                    </h6>
-
-                    <h2 class='fw-bold'>
-                        {{ active_students }}
-                    </h2>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class='col-md-3 col-6'>
-
-            <div class='card shadow border-0 bg-danger text-white h-100'>
-
-                <div class='card-body text-center'>
-
-                    <h6 class='mt-3 text-uppercase'>
-                        Inactive
-                    </h6>
-
-                    <h2 class='fw-bold'>
-                        {{ inactive_students }}
-                    </h2>
-
-                </div>
-
-            </div>
-
-        </div>
-
-        <div class='col-md-3 col-6'>
-
-            <div class='card shadow border-0 bg-info text-white h-100'>
-
-                <div class='card-body text-center'>
-
-                    <h6 class='mt-3 text-uppercase'>
-                        Grades
-                    </h6>
-
-                    <h2 class='fw-bold'>
-                        {{ grades|length }}
-                    </h2>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </div>
-
     <!-- Grade Distribution -->
     {% if grades %}
 
@@ -472,7 +481,7 @@
                                         <div class='d-flex align-items-center gap-2'>
 
                                             <div class='rounded-circle bg-primary text-white d-flex align-items-center justify-content-center'
-                                                style='width:36px;height:36px;'>
+                                            style='width:36px;height:36px;'>
 
                                                 <i class='bi bi-person-fill'></i>
 
@@ -615,12 +624,13 @@
 
             <div class='card-body d-flex gap-2 flex-wrap'>
 
-                <a href='{% url "manage_system" %}'
-                class='btn btn-outline-secondary'>
-
-                    <i class='bi bi-speedometer2'></i>
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-speedometer2"></i>
+                    Dashboard
+                </a>
+                <a href="{% url 'manage_system' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
                     Management Hub
-
                 </a>
 
             </div>
