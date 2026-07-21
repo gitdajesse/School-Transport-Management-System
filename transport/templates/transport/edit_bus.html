@@ -1,0 +1,246 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Edit Bus - {{ bus.registration }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-pencil-square"></i>
+            Edit Bus
+        </h1>
+        <div>
+            <a href="{% url 'bus_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Buses
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bus-front"></i>
+                        Editing: {{ bus.registration }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'edit_bus' bus.id %}">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Bus Registration
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="text"
+                                    name="bus_registration"
+                                    class="form-control"
+                                    value="{{ bus.registration }}"
+                                    required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Driver Name
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="text"
+                                    name="driver_name"
+                                    class="form-control"
+                                    value="{{ bus.driver_name }}"
+                                    required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Capacity
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="number"
+                                    name="capacity"
+                                    class="form-control"
+                                    value="{{ bus.capacity }}"
+                                    min="1"
+                                    required>
+                                <small class="text-muted">
+                                    Maximum number of students
+                                </small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Route Name
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="text"
+                                    name="route_name"
+                                    class="form-control"
+                                    value="{{ bus.route_name }}"
+                                    required>
+                            </div>
+                        </div>
+
+                        <!-- Status Toggle -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input"
+                                    type="checkbox"
+                                    name="is_active"
+                                    id="isActive"
+                                    {% if bus.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="isActive">
+                                    <span class="badge {% if bus.is_active %}bg-success{% else %}bg-danger{% endif %}">
+                                        {% if bus.is_active %}
+                                            Active
+                                        {% else %}
+                                            Inactive
+                                        {% endif %}
+                                    </span>
+                                </label>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                Uncheck to deactivate this bus (only if no students are assigned)
+                            </small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'bus_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Bus Statistics -->
+            <div class="card card-shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        Bus Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-6">
+                                    Students Assigned:
+                                </dt>
+                                <dd class="col-sm-6">
+                                    <span class="badge bg-primary">
+                                        {{ student_count|default:0 }}
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-6">
+                                    Capacity:
+                                </dt>
+                                <dd class="col-sm-6">
+                                    {{ bus.capacity }}
+                                </dd>
+
+                                <dt class="col-sm-6">
+                                    Utilization:
+                                </dt>
+                                <dd class="col-sm-6">
+                                    <span class="badge
+                                        {% if utilization > 90 %}bg-danger
+                                        {% elif utilization > 70 %}bg-warning
+                                        {% else %}bg-success{% endif %}">
+                                        {{ utilization|default:0 }}%
+                                    </span>
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar
+                                    {% if utilization > 90 %}bg-danger
+                                    {% elif utilization > 70 %}bg-warning
+                                    {% else %}bg-success{% endif %}"
+                                    role="progressbar"
+                                    style="width: {{ utilization|default:0 }}%;"
+                                    aria-valuenow="{{ utilization|default:0 }}"
+                                    aria-valuemin="0"
+                                    aria-valuemax="100">
+                                    {{ utilization|default:0 }}% Utilized
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                {{ student_count|default:0 }} of {{ bus.capacity }} students
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="card card-shadow mt-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Danger Zone
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="mb-0">
+                                <strong>
+                                    Deactivate Bus
+                                </strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if student_count > 0 %}
+                                        <span class="text-danger">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            {{ student_count }} students are currently assigned.
+                                            Reassign them before deactivating.
+                                        </span>
+                                    {% else %}
+                                        This will remove {{ bus.registration }} from active lists.
+                                        This action can be undone.
+                                    {% endif %}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if student_count == 0 %}
+                                <a href="{% url 'deactivate_bus' bus.id %}"
+                                class="btn btn-danger">
+                                    <i class="bi bi-x-circle"></i> Deactivate
+                                </a>
+                            {% else %}
+                                <a href="{% url 'bus_detail' bus.id %}"
+                                class="btn btn-warning">
+                                    <i class="bi bi-people"></i> View Students
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

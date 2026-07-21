@@ -495,12 +495,17 @@ def bus_list(request):
         if not bus_registration:
             messages.error(request, 'Please enter the bus registration.')
             return render(request, 'transport/bus_list.html', context)
+        if not capacity:
+            messages.error(request, 'Please enter the bus capacity.')
+            return render(request, 'transport/bus_list.html', context)
         if not driver_name:
             messages.error(request, "Please enter the driver's name.")
             return render(request, 'transport/bus_list.html', context)
         if not route_name:
             messages.error(request, 'Please enter the route name the bus will be using.')
             return render(request, 'transport/bus_list.html', context)
+
+        # Validate capacity
         try:
             capacity = int(capacity)
             if capacity <= 0:
@@ -533,3 +538,134 @@ def bus_list(request):
 
     else:
         return render(request, 'transport/bus_list.html', context)
+
+
+@login_required
+def edit_bus(request, bus_id):
+    """ Edit an existing bus """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can edit buses.')
+        return redirect('index')
+
+    bus = get_object_or_404(Bus, id = bus_id)
+
+    if request.method == 'POST':
+        # Get form data
+        registration = request.POST.get('bus_registration')
+        driver_name = request.POST.get('driver_name')
+        capacity = request.POST.get('capacity')
+        route_name = request.POST.get('route_name')
+        is_active = request.POST.get('is_active')
+
+        # Validatiion
+        if not registration:
+            messages.error(request, 'Please enter the bus registration.')
+            return redirect('edit_bus', bus_id = bus_id)
+        if not driver_name:
+            messages.error(request, 'Please enter the bus registration.')
+            return redirect('edit_bus', bus_id = bus_id)
+        if not capacity:
+            messages.error(request, 'Please enter the bus registration.')
+            return redirect('edit_bus', bus_id = bus_id)
+        if not route_name:
+            messages.error(request, 'Please enter the bus registration.')
+            return redirect('edit_bus', bus_id = bus_id)
+
+        # Validate capacity
+        try:
+            capacity = int(capacity)
+            if capacity <= 0:
+                messages.error(request, 'Cannot must be a positive number.')
+                return redirect('edit_bus', bus_id = bus_id)
+        except ValueError:
+            messages.error(request, 'Capacity must be a valid number.')
+            return redirect('edit_bus', bus_id = bus_id)
+
+        # Check for duplicate registration (excluding current bus)
+        if Bus.objects.filter(registration = registration).exclude(id = bus_id).exists():
+            messages.error(request, f'Bus "{registration}" already exists.')
+            return redirect('edit_bus', bus_id = bus_id)
+
+        try:
+            # Update bus
+            bus.registration = registration
+            bus.driver_name = driver_name
+            bus.capacity = capacity
+            bus.route_name = route_name
+            bus.is_active = is_active
+            bus.save()
+
+            messages.success(request, f'Bus "{registration}" updated sucessfully!')
+            return redirect('bus_list')
+
+        except Exception as e:
+            messages.error(request, f'Error updating bus: {str(e)}')
+            return redirect('edit_bus', bus_id = bus_id)
+
+    else:
+        # GET request
+        context = {
+            'bus': bus
+        }
+        return render(request, 'transport/edit_bus.html', context)
+
+
+@login_required
+def deactivate_bus(request, bus_id):
+    """ Deactivate a bus """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can deactivate buses.')
+        return redirect('index')
+
+    bus = get_object_or_404(Bus, id = bus_id)
+
+    # Check if students are assigned to this bus
+    students = Student.objects.filter(bus = bus, is_active = True)
+    if students.exists():
+        messages.warning(request, f'Bus "{bus.registration}" has {student.count()} students assigned.' 'Please reassign students before deactivating.')
+        return redirect('bus_list')
+
+    if request.method == 'POST':
+        bus.is_active = False
+        bus.save()
+
+        messages.success(request, f'Bus "{bus.registration}" has been deactivated.')
+        return redirect('bus_list')
+
+    else:
+        context = {
+            'bus': bus
+        }
+
+        return render(request, 'transport/confirm_deactivate_bus.html', context)
+
+
+@login_required
+def reactivate_bus(request, bus_id):
+    """ Reactiavte a deactivated bus """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can reactivate buses.')
+        return redirect('index')
+
+    bus = get_object_or_404(Bus, id = bus_id)
+
+    if request.method == 'POST':
+        bus.is_active = True
+        bus.save()
+
+        messages.success(request, f'Bus "{bus.registration}" has been reactivated.')
+        return redirect('bus_list')
+
+    else:
+        context = {
+            'bus': bus
+        }
+
+        return render(request, 'transport/confirm_reactivate_bus.html', context)
+
+
+@login_required
+def bus_detail():
+    pass
+    # Create URL for the view
+    # Finish up with the view and the html template regarding the bus detail

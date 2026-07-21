@@ -1,0 +1,68 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Confirm Reactivate Bus{% endblock %}
+
+{% block body %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card card-shadow border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle"></i>
+                        Confirm Reactivation
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-1 text-success mb-3">
+                        <i class="bi bi-bus-front"></i>
+                    </div>
+
+                    <h4>
+                        Reactivate this bus?
+                    </h4>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>
+                            Bus Details:
+                        </strong>
+                        <br>
+                        <strong>
+                            Registration:
+                        </strong>
+                        {{ bus.registration }}
+                        <br>
+                        <strong>
+                            Driver:
+                        </strong>
+                        {{ bus.driver_name }}
+                        <br>
+                        <strong>
+                            Route:
+                        </strong>
+                        {{ bus.route_name }}
+                    </div>
+
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i>
+                        This bus will reappear in active lists and be available for student assignments.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'bus_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i>
+                            Cancel
+                        </a>
+                        <form method="POST" action="{% url 'reactivate_bus' bus.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i>
+                                Yes, Reactivate
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

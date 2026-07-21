@@ -1,0 +1,92 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Confirm Deactivate Bus
+{% endblock %}
+
+{% block body %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card card-shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Confirm Deactivation
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-1 text-danger mb-3">
+                        <i class="bi bi-bus-front"></i>
+                    </div>
+
+                    <h4>
+                        Are you sure you want to deactivate this bus?
+                    </h4>
+
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>
+                            Bus Details:
+                        </strong>
+                        <br>
+                        <strong>
+                            Registration:
+                        </strong>
+                        {{ bus.registration }}
+                        <br>
+                        <strong>
+                            Driver:
+                        </strong>
+                        {{ bus.driver_name }}
+                        <br>
+                        <strong>
+                            Route:
+                        </strong>
+                        {{ bus.route_name }}
+                        <br>
+                        <strong>
+                            Students:
+                        </strong>
+                        {{ bus.student_count|default:0 }}
+                    </div>
+
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>
+                            Warning:
+                        </strong>
+                        This bus will be removed from active lists.
+                        {% if bus.student_count > 0 %}
+                            <br>
+                            <strong>
+                                {{ bus.student_count }} students
+                            </strong>
+                            are currently assigned to this bus.
+                            Please reassign them before deactivating.
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'bus_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i>
+                            Cancel
+                        </a>
+                        {% if bus.student_count == 0 %}
+                            <form method="POST" action="{% url 'deactivate_bus' bus.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-check-circle"></i> Yes, Deactivate
+                                </button>
+                            </form>
+                        {% else %}
+                            <a href="{% url 'bus_detail' bus.id %}" class="btn btn-warning">
+                                <i class="bi bi-people"></i>
+                                Reassign Students
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

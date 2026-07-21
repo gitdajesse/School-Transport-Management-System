@@ -22,4 +22,7 @@ urlpatterns = [
 
     # Bus management URLs
     path('buses/', views.bus_list, name = 'bus_list'),
+    path('buses/edit/<int:bus_id>', views.edit_bus, name = 'edit_bus'),
+    path('buses/deactivate/<int:bus_id>', views.deactivate_bus, name = 'deactivate_bus'),
+    path('buses/reactivate/<int:bus_id>', views.reactivate_bus, name = 'reactivate_bus'),
 ]
