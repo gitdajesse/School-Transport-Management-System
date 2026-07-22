@@ -166,6 +166,7 @@
                                 class="form-control"
                                 placeholder="Enter student's full name"
                                 value="{{ form_data.full_name|default:'' }}"
+                                autocomplete = "off"
                                 required>
 
                         </div>
@@ -303,6 +304,7 @@
                                 class='form-control'
                                 placeholder='Enter pickup location'
                                 value='{{ form_data.pick_up|default:"" }}'
+                                autocomplete = "off"
                                 required>
 
                         </div>
@@ -319,6 +321,7 @@
                                 class='form-control'
                                 placeholder='Enter drop-off location'
                                 value='{{ form_data.drop_off|default:"" }}'
+                                autocomplete = "off"
                                 required>
 
                         </div>
@@ -335,6 +338,7 @@
                                 class='form-control'
                                 placeholder='Enter emergency contact phone number'
                                 value='{{ form_data.emergency_contact|default:"" }}'
+                                autocomplete = "off"
                                 required>
 
                         </div>

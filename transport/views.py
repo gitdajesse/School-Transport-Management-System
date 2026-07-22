@@ -206,9 +206,11 @@ def manage_system(request):
         return redirect('index')
 
     total_buses = Bus.objects.count()
+    total_students = Student.objects.count()
 
     context = {
-        'total_buses': total_buses
+        'total_buses': total_buses,
+        'total_students': total_students
     }
 
     return render(request, 'transport/manage_system.html', context)
