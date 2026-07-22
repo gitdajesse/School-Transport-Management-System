@@ -205,7 +205,13 @@ def manage_system(request):
         messages.error(request, 'Access denied. You are not an admin.')
         return redirect('index')
 
-    return render(request, 'transport/manage_system.html')
+    total_buses = Bus.objects.count()
+
+    context = {
+        'total_buses': total_buses
+    }
+
+    return render(request, 'transport/manage_system.html', context)
 
 
 @login_required
@@ -467,15 +473,22 @@ def bus_list(request):
     # Calculate capacity utilization for each bus
     for bus in buses:
         student_count = Student.objects.filter(bus = bus, is_active = True).count()
-        bus.utilization = f"{(student_count / bus.capacity * 100):.0f}%" if bus.capacity > 0 else "N/A"
-        bus.student_count = student_count
 
-        if bus.utilization > 90:
-            bus.progress_color = 'bg-danger'
-        elif bus.utilization > 70:
-            bus.progress_color = 'bg-warning'
+        if bus.capacity > 0:
+            utilization = (student_count / bus.capacity * 100)
         else:
-            bus.progress_color = 'bg-success'
+            utilization = 0
+
+        bus.student_count = student_count
+        bus.utilization_percent = utilization
+        bus.utilization = f"{utilization:.0f}%"
+
+        if utilization > 90:
+            bus.progress_color = "bg-danger"
+        elif utilization > 70:
+            bus.progress_color = "bg-warning"
+        else:
+            bus.progress_color = "bg-success"
 
     context = {
         'buses': buses,
@@ -548,6 +561,10 @@ def edit_bus(request, bus_id):
         return redirect('index')
 
     bus = get_object_or_404(Bus, id = bus_id)
+    students = Student.objects.filter(bus = bus, is_active = True).order_by('name')
+    student_count = students.count()
+
+    utilization = (student_count / bus.capacity * 100) if bus.capacity > 0 else 0
 
     if request.method == 'POST':
         # Get form data
@@ -605,7 +622,8 @@ def edit_bus(request, bus_id):
     else:
         # GET request
         context = {
-            'bus': bus
+            'bus': bus,
+            'utilization': utilization
         }
         return render(request, 'transport/edit_bus.html', context)
 

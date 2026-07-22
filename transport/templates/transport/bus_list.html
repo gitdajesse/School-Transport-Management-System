@@ -101,10 +101,10 @@
                                     </span>
                                 </label>
                                 <input type="text"
-                                       name="bus_registration"
-                                       class="form-control"
-                                       placeholder="e.g., KBZ 123A"
-                                       required>
+                                    name="bus_registration"
+                                    class="form-control"
+                                    placeholder="e.g., KBZ 123A"
+                                    required>
                             </div>
 
                             <div class="col-md-6 mb-3">
@@ -115,10 +115,10 @@
                                     </span>
                                 </label>
                                 <input type="text"
-                                       name="driver_name"
-                                       class="form-control"
-                                       placeholder="Enter driver's full name"
-                                       required>
+                                    name="driver_name"
+                                    class="form-control"
+                                    placeholder="Enter driver's full name"
+                                    required>
                             </div>
                         </div>
 
@@ -131,11 +131,11 @@
                                     </span>
                                 </label>
                                 <input type="number"
-                                       name="capacity"
-                                       class="form-control"
-                                       placeholder="Maximum number of students"
-                                       min="1"
-                                       required>
+                                    name="capacity"
+                                    class="form-control"
+                                    placeholder="Maximum number of students"
+                                    min="1"
+                                    required>
                             </div>
 
                             <div class="col-md-6 mb-3">
@@ -146,10 +146,10 @@
                                     </span>
                                 </label>
                                 <input type="text"
-                                       name="route_name"
-                                       class="form-control"
-                                       placeholder="e.g., Route A - Morning"
-                                       required>
+                                    name="route_name"
+                                    class="form-control"
+                                    placeholder="e.g., Route A - Morning"
+                                    required>
                             </div>
                         </div>
 
@@ -242,7 +242,7 @@
                                         {{ bus.student_count }}
                                     </td>
                                     <td>
-                                        <div class="progress" style="height:20px;">
+                                        <div class="progress" style="height:30px;">
                                             <div class="progress-bar {{ bus.progress_color }}"
                                                 role="progressbar"
                                                 style="width: {{ bus.utilization }};"
@@ -267,25 +267,25 @@
                                     <td>
                                         <div class="d-flex justify-content-center gap-1">
                                             <a href="{% url 'bus_detail' bus.id %}"
-                                               class="btn btn-sm btn-outline-info"
-                                               title="View Details">
+                                            class="btn btn-sm btn-outline-info"
+                                            title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             <a href="{% url 'edit_bus' bus.id %}"
-                                               class="btn btn-sm btn-outline-primary"
-                                               title="Edit Bus">
+                                            class="btn btn-sm btn-outline-primary"
+                                            title="Edit Bus">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             {% if bus.is_active %}
                                                 <a href="{% url 'deactivate_bus' bus.id %}"
-                                                   class="btn btn-sm btn-outline-danger"
-                                                   title="Deactivate Bus">
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Deactivate Bus">
                                                     <i class="bi bi-x-circle"></i>
                                                 </a>
                                             {% else %}
                                                 <a href="{% url 'reactivate_bus' bus.id %}"
-                                                   class="btn btn-sm btn-outline-success"
-                                                   title="Reactivate Bus">
+                                                class="btn btn-sm btn-outline-success"
+                                                title="Reactivate Bus">
                                                     <i class="bi bi-check-circle"></i>
                                                 </a>
                                             {% endif %}
