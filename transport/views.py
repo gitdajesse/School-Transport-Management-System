@@ -622,7 +622,7 @@ def deactivate_bus(request, bus_id):
     # Check if students are assigned to this bus
     students = Student.objects.filter(bus = bus, is_active = True)
     if students.exists():
-        messages.warning(request, f'Bus "{bus.registration}" has {student.count()} students assigned.' 'Please reassign students before deactivating.')
+        messages.warning(request, f'Bus "{bus.registration}" has {students.count()} students assigned.' 'Please reassign students before deactivating.')
         return redirect('bus_list')
 
     if request.method == 'POST':
@@ -665,7 +665,25 @@ def reactivate_bus(request, bus_id):
 
 
 @login_required
-def bus_detail():
-    pass
-    # Create URL for the view
-    # Finish up with the view and the html template regarding the bus detail
+def bus_detail(request, bus_id):
+    """ View detailed information about a specific bus """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can view bus details.')
+        return redirect('index')
+
+    bus = get_object_or_404(Bus, id = bus_id)
+    students = Student.objects.filter(bus = bus, is_active = True).order_by('name')
+
+    student_count = students.count()
+    utilization = (student_count / bus.capacity * 100) if bus.capacity > 0 else 0
+    available = bus.capacity - student_count
+
+    context = {
+        'bus': bus,
+        'students': students,
+        'student_count': student_count,
+        'utilization': utilization,
+        'available': available
+    }
+
+    return render(request, 'transport/bus_detail.html', context)
