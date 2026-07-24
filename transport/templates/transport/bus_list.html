@@ -101,11 +101,11 @@
                                     </span>
                                 </label>
                                 <input type="text"
-                                    name="bus_registration"
-                                    class="form-control"
-                                    placeholder="e.g., KBZ 123A"
-                                    autocomplete = "off"
-                                    required>
+                                       name="bus_registration"
+                                       class="form-control"
+                                       placeholder="e.g., KBZ 123A"
+                                       autocomplete = "off"
+                                       required>
                             </div>
 
                             <div class="col-md-6 mb-3">
@@ -116,11 +116,11 @@
                                     </span>
                                 </label>
                                 <input type="text"
-                                    name="driver_name"
-                                    class="form-control"
-                                    placeholder="Enter driver's full name"
-                                    autocomplete = "off"
-                                    required>
+                                       name="driver_name"
+                                       class="form-control"
+                                       placeholder="Enter driver's full name"
+                                       autocomplete = "off"
+                                       required>
                             </div>
                         </div>
 
@@ -133,28 +133,42 @@
                                     </span>
                                 </label>
                                 <input type="number"
-                                    name="capacity"
-                                    class="form-control"
-                                    placeholder="Maximum number of students"
-                                    min="1"
-                                    required>
+                                       name="capacity"
+                                       class="form-control"
+                                       placeholder="Maximum number of students"
+                                       min="1"
+                                       required>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">
                                     Route Name
-                                    <span class="text-danger">
-                                        *
-                                    </span>
                                 </label>
-                                <input type="text"
+                                <select
                                     name="route_name"
-                                    class="form-control"
-                                    placeholder="e.g., Route A - Morning"
-                                    autocomplete = "off"
+                                    class="form-select"
                                     required>
+                                    <option value="">
+                                        Select Route
+                                    </option>
+                                    {% for route in routes %}
+                                        <option
+                                            value="{{ route.name }}"
+                                            {% if form_data.route == route.name %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {{ route.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if not routes %}
+                                <small class="text-warning">
+                                    <i class="bi bi-exclamation-triangle"></i>
+                                    No routes registered yet. Please register a route first.
+                                </small>
+                                {% endif %}
                             </div>
-                        </div>
 
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-plus-lg"></i>
@@ -270,25 +284,25 @@
                                     <td>
                                         <div class="d-flex justify-content-center gap-1">
                                             <a href="{% url 'bus_detail' bus.id %}"
-                                            class="btn btn-sm btn-outline-info"
-                                            title="View Details">
+                                               class="btn btn-sm btn-outline-info"
+                                               title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             <a href="{% url 'edit_bus' bus.id %}"
-                                            class="btn btn-sm btn-outline-primary"
-                                            title="Edit Bus">
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="Edit Bus">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             {% if bus.is_active %}
                                                 <a href="{% url 'deactivate_bus' bus.id %}"
-                                                class="btn btn-sm btn-outline-danger"
-                                                title="Deactivate Bus">
+                                                   class="btn btn-sm btn-outline-danger"
+                                                   title="Deactivate Bus">
                                                     <i class="bi bi-x-circle"></i>
                                                 </a>
                                             {% else %}
                                                 <a href="{% url 'reactivate_bus' bus.id %}"
-                                                class="btn btn-sm btn-outline-success"
-                                                title="Reactivate Bus">
+                                                   class="btn btn-sm btn-outline-success"
+                                                   title="Reactivate Bus">
                                                     <i class="bi bi-check-circle"></i>
                                                 </a>
                                             {% endif %}
