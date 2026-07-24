@@ -150,3 +150,36 @@ class RouteAssignment(models.Model):
     def __str__(self):
         return f"{self.student.name} assigned to {self.bus.registration}"
 
+
+class Route(models.Model):
+    name = models.CharField(max_length = 100, unique = True)
+    description = models.TextField(blank = True)
+    is_active = models.BooleanField(default = True)
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    def __str__(self):
+        return self.name
+
+    def get_stops_in_order(self):
+        return self.stops.order_by('order')
+
+    def get_student_count(self):
+        return Student.objects.filter(bus__route_name = self.name, is_active = True).count()
+
+
+class Stop(models.Model):
+    route = models.ForeignKey(Route, on_delete = models.CASCADE, related_name = 'stops')
+    name = models.CharField(max_length = 200)
+    address = models.TextField()
+    order = models.IntegerField()
+    pickup_time = models.TimeField(null = True, blank = True)
+    dropoff_time = models.TimeField(null = True, blank = True)
+    is_active = models.BooleanField(default = True)
+
+    class Meta:
+        ordering = ['order']
+        unique_together = ['route', 'order']
+
+    def __str__(self):
+        return f"{self.route.name} - Stop {self.order}: {self.name}"

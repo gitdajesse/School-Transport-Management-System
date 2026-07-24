@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import IntegrityError
 
-from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment
+from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop
 
 # Create your views here.
 def index(request):
@@ -207,10 +207,12 @@ def manage_system(request):
 
     total_buses = Bus.objects.count()
     total_students = Student.objects.count()
+    total_routes = Route.objects.count()
 
     context = {
         'total_buses': total_buses,
-        'total_students': total_students
+        'total_students': total_students,
+        'total_routes': total_routes,
     }
 
     return render(request, 'transport/manage_system.html', context)
@@ -464,6 +466,9 @@ def bus_list(request):
         messages.error(request, 'Access denied. Only admins can view all buses.')
         return redirect('index')
 
+    # Get all routes
+    routes = Route.objects.all()
+
     # Get all buses
     buses = Bus.objects.all().order_by('registration')
 
@@ -493,6 +498,7 @@ def bus_list(request):
             bus.progress_color = "bg-success"
 
     context = {
+        'routes': routes,
         'buses': buses,
         'total_buses': total_buses,
         'active_buses': active_buses,
@@ -707,3 +713,61 @@ def bus_detail(request, bus_id):
     }
 
     return render(request, 'transport/bus_detail.html', context)
+
+
+def route_list(request):
+    """ Display all routes and handle route creation """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can manage routes.')
+        return redirect('index')
+
+    # Get all routes
+    routes = Route.objects.all().order_by('name')
+
+    # Calculate statistics
+    total_routes = routes.count()
+    active_routes = routes.filter(is_active = True).count()
+    inactive_routes = routes.filter(is_active = False).count()
+
+    # Get stop count for each route
+    for route in routes:
+        route.stop_count = route.stops.count()
+        route.student_count = Student.objects.filter(bus__route_name = route.name, is_active = True).count()
+
+    context = {
+        'routes': routes,
+        'total_routes': total_routes,
+        'active_routes': active_routes,
+        'inactive_routes': inactive_routes,
+    }
+
+    if request.method == 'POST':
+        # Get form data
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+
+        # Validation
+        if not name:
+            messages.error(request, 'Please enter a route name.')
+            return render(request, 'transport/route_list.html', context)
+
+        # Check for duplicate
+        if Route.objects.filter(name = name).exists():
+            messages.error(request, f'Route "{name}" already exists.')
+            return render(request, 'transport/route_list.html', context)
+
+        try:
+            route = Route.objects.create(
+                name = name,
+                description = description or '',
+                is_active = True
+            )
+            messages.success(request, f'Route "{name}" created successfully!')
+            return redirect('roue_list')
+        except Exception as e:
+            messages.error(request, f'Error creating route: {str(e)}')
+            return render(request, 'transport/route_list.html', context)
+
+    else:
+        return render(request, 'transport/route_list.html', context)
+

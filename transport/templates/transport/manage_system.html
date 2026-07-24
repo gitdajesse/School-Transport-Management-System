@@ -34,6 +34,13 @@
                                 {{ total_buses }}
                             </span>
                         </a>
+                        <a href="{% url 'route_list' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-map text-success"></i>
+                            Manage Routes
+                            <span class="badge bg-primary float-end">
+                                {{ total_routes }}
+                            </span>
+                        </a>
                         <a href="#" class="list-group-item list-group-item-action">
                             <i class="bi bi-person-heart text-info"></i>
                             Manage Parents
