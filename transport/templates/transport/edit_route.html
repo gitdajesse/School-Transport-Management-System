@@ -1,0 +1,328 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Edit Route - {{ route.name }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-pencil-square"></i> Edit Route
+        </h1>
+        <div>
+            <a href="{% url 'route_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Routes
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- Edit Form -->
+            <div class="card card-shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-route"></i> Editing: {{ route.name }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'edit_route' route.id %}">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Route Name
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <input type="text"
+                                name="name"
+                                class="form-control"
+                                value="{{ route.name }}"
+                                required>
+                            <small class="text-muted">
+                                Enter a unique name for this route
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Description
+                            </label>
+                            <textarea name="description"
+                                    class="form-control"
+                                    rows="3"
+                                    placeholder="Brief description of the route">
+                                    {{ route.description }}
+                                    </textarea>
+                            <small class="text-muted">
+                                Optional: Add any notes about this route
+                            </small>
+                        </div>
+
+                        <!-- Status Toggle -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input"
+                                    type="checkbox"
+                                    name="is_active"
+                                    id="isActive"
+                                    {% if route.is_active %}
+                                        checked
+                                    {% endif %}>
+                                <label class="form-check-label" for="isActive">
+                                    <span class="badge
+                                    {% if route.is_active %}
+                                        bg-success
+                                    {% else %}
+                                        bg-danger
+                                    {% endif %}">
+                                        {% if route.is_active %}
+                                            Active
+                                        {% else %}
+                                            Inactive
+                                        {% endif %}
+                                    </span>
+                                </label>
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle"></i>
+                                Uncheck to deactivate this route (only if no students are assigned)
+                            </small>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'route_list' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Route Statistics -->
+            <div class="card card-shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        Route Statistics
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-6">
+                                    Total Stops:
+                                </dt>
+                                <dd class="col-sm-6">
+                                    <span class="badge bg-primary">
+                                        {{ route.stops.count }}
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-6">
+                                    Students on Route:
+                                </dt>
+                                <dd class="col-sm-6">
+                                    <span class="badge bg-success">
+                                        {{ route.student_count }}
+                                    </span>
+                                </dd>
+
+                                <dt class="col-sm-6">
+                                    Assigned Bus:
+                                </dt>
+                                <dd class="col-sm-6">
+                                    {% if assigned_bus %}
+                                        <span class="badge bg-info">
+                                            {{ assigned_bus.registration }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            None
+                                        </span>
+                                    {% endif %}
+                                </dd>
+
+                                <dt class="col-sm-6">
+                                    Status:
+                                </dt>
+                                <dd class="col-sm-6">
+                                    {% if route.is_active %}
+                                        <span class="badge bg-success">
+                                            Active
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            Inactive
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-body py-2">
+                                    <h6 class="mb-2">
+                                        Quick Actions
+                                    </h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <a href="{% url 'route_detail' route.id %}" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-eye"></i>
+                                            View Route
+                                        </a>
+                                        <a href="{% url 'add_stop' route.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-plus-lg"></i> Add Stop
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stop List (Preview) -->
+            <div class="card card-shadow mt-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-pin-map"></i>
+                        Stops on This Route
+                    </h6>
+                    <a href="{% url 'route_detail' route.id %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-eye"></i>
+                        View All Stops
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if route.stops.all %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Stop Name</th>
+                                        <th>Address</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stop in route.stops.all|slice:":5" %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-secondary">
+                                                    {{ stop.order }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-pin-fill text-danger"></i>
+                                                {{ stop.name }}
+                                            </td>
+                                            <td>
+                                                {{ stop.address|truncatechars:30 }}
+                                            </td>
+                                            <td>
+                                                {% if stop.is_active %}
+                                                    <span class="badge bg-success">
+                                                        Active
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">
+                                                        Inactive
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    {% if route.stops.count > 5 %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted">
+                                                <small>
+                                                    + {{ route.stops.count|add:"-5" }} more stops
+                                                </small>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-0">
+                                No stops added to this route yet.
+                            </p>
+                            <a href="{% url 'route_detail' route.id %}" class="btn btn-sm btn-primary mt-2">
+                                <i class="bi bi-plus-lg"></i>
+                                Add Stops
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="card card-shadow mt-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Danger Zone
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="mb-0">
+                                <strong>
+                                    Deactivate Route
+                                </strong>
+                                <br>
+                                <small class="text-muted">
+                                    {% if route.student_count > 0 %}
+                                        <span class="text-danger">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            {{ route.student_count }} students are currently assigned to this route.
+                                            Reassign them before deactivating.
+                                        </span>
+                                    {% else %}
+                                        This will remove {{ route.name }} from active lists.
+                                        This action can be undone.
+                                    {% endif %}
+                                </small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            {% if route.student_count == 0 %}
+                                <a href="{% url 'deactivate_route' route.id %}"
+                                class="btn btn-danger">
+                                    <i class="bi bi-x-circle"></i> Deactivate
+                                </a>
+                            {% else %}
+                                <a href="{% url 'route_detail' route.id %}"
+                                class="btn btn-warning">
+                                    <i class="bi bi-people"></i>
+                                    View Students
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Created/Updated Info -->
+            <div class="text-center text-muted small mt-3">
+                <p class="mb-0">
+                    Created: {{ route.created_at|date:"F d, Y H:i" }}
+                    {% if route.updated_at %}
+                        | Last Updated: {{ route.updated_at|date:"F d, Y H:i" }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

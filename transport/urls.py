@@ -20,11 +20,17 @@ urlpatterns = [
     path('students/deactivate/<int:student_id>/', views.deactivate_student, name = 'deactivate_student'),
     path('students/reactivate/<int:student_id>/', views.reactivate_student, name = 'reactivate_student'),
 
-    # Bus and route management URLs
+    # Bus management URLs
     path('buses/', views.bus_list, name = 'bus_list'),
     path('buses/edit/<int:bus_id>/', views.edit_bus, name = 'edit_bus'),
     path('buses/deactivate/<int:bus_id>/', views.deactivate_bus, name = 'deactivate_bus'),
     path('buses/reactivate/<int:bus_id>/', views.reactivate_bus, name = 'reactivate_bus'),
     path('buses/detail/<int:bus_id>/', views.bus_detail, name = 'bus_detail'),
+
+    # Route management URLs
     path('routes/', views.route_list, name = 'route_list'),
+    path('routes/detail/<int:route_id>/', views.route_detail, name = 'route_detail'),
+    path('routes/edit/<int:route_id>/', views.edit_route, name = 'edit_route'),
+    path('routes/deactivate/<int:route_id>/', views.deactivate_route, name = 'deactivate_route'),
+    path('routes/reactivate/<int:route_id>/', views.reactivate_route, name = 'reactivate_route'),
 ]

@@ -448,7 +448,7 @@ def reactivate_student(request, student_id):
 
     if request.method == 'POST':
         student.is_active = True
-        student.is_active()
+        student.save()
         messages.success(request, f'Student "{student.name}" has been reactivated.')
         return redirect('student_list')
 
@@ -715,6 +715,7 @@ def bus_detail(request, bus_id):
     return render(request, 'transport/bus_detail.html', context)
 
 
+@login_required
 def route_list(request):
     """ Display all routes and handle route creation """
     if request.user.user_type != 'admin':
@@ -771,3 +772,126 @@ def route_list(request):
     else:
         return render(request, 'transport/route_list.html', context)
 
+
+@login_required
+def route_detail(request, route_id):
+    """ View detailed information about a specific route """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins cam view route details.')
+        return redirect('index')
+
+    route = get_object_or_404(Route, id = route_id)
+    stops = route.stops.all().order_by('order')
+
+    # Get students on this route
+    students = Student.objects.filter(bus__route_name = route.name, is_active = True).order_by('name')
+
+    # Get the bus assigned to this route(if any)
+    assigned_bus = Bus.objects.filter(route_name = route.name, is_active = True).first()
+
+    context = {
+        'route': route,
+        'stops': stops,
+        'students': students,
+        'student_count': students.count(),
+        'assigned_bus': assigned_bus,
+    }
+
+    return render(request, 'transport/route_detail.html', context)
+
+
+@login_required
+def edit_route(request, route_id):
+    """ Edit an existing route """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can edit the routes.')
+        return redirect('index')
+
+    route = get_object_or_404(Route, id = route_id)
+
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        is_active = request.POST.get('is_active') == 'on'
+
+        # Validation
+        if not name:
+            messages.error(request, 'Please enter a route name.')
+            return redirect('edit_route', route_id = route_id)
+
+        # Check for duplicate (excluding current route)
+        if Route.objects.filter(name = name).exclude(id = route_id).exists():
+            messages.error(request, f'Route "{name}" already exists.')
+            return redirect('edit_route', route_id = route_id)
+
+        try:
+            route.name = name
+            route.description = description
+            route.is_active = is_active
+            route.save()
+
+            messages.success(request, f'Route "{name}" updated successfully!')
+            return redirect('route_list')
+        except Exception as e:
+            messages.error(request, f'Error updating route: {str(e)}')
+            return redirect('edit_route', route_id = route_id)
+
+    context = {
+        'route': route
+    }
+
+    return render(request, 'transport/edit_route.html', context)
+
+
+@login_required
+def deactivate_route(request, route_id):
+    """ Deactivate a route """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can deactivate routes.')
+        return redirect('index')
+
+    route = get_object_or_404(Route, id = route_id)
+
+    # Check if students are assigned to this route
+    students = Student.objects.filter(bus__route_name = route.name, is_active = True)
+
+    if request.method == 'POST':
+        if students.exists():
+            messages.warning(request, f'Route "{route.name}" has {students.count()} students assigned.' 'Please reassign students before deactivating.')
+            return redirect('route_list')
+
+        route.is_active = False
+        route.save()
+
+        messages.success(request, f'Route "{route.name}" has been deactivated.')
+        return redirect('route_list')
+
+    context = {
+        'route': route,
+        'student_count': students.count()
+    }
+
+    return render(request, 'transport/confirm_deactivate_route.html', context)
+
+
+@login_required
+def reactivate_route(request, route_id):
+    """ Reactivate a deactivated route """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins acn reactivate routes.')
+        return redirect('index')
+
+    route = get_object_or_404(Route, id = route_id)
+
+    if request.method == 'POST':
+        route.is_active = True
+        route.save()
+
+        messages.success(request, f'Route "{route.name}" has been reactivated.')
+        return redirect('route_list')
+
+    context = {
+        'route': route
+    }
+
+    return render(request, 'transport/confirm_reactivate_route.html', context)

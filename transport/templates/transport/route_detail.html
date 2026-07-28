@@ -1,0 +1,241 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Route Details - {{ route.name }}
+{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-route"></i>
+            Route Details
+        </h1>
+        <div>
+            <a href="{% url 'route_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Routes
+            </a>
+            <a href="{% url 'edit_route' route.id %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i>
+                Edit Route
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Route Information -->
+        <div class="col-lg-4 mb-4">
+            <div class="card card-shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Route Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">
+                            Name:
+                        </dt>
+                        <dd class="col-sm-7">
+                            <strong>
+                                {{ route.name }}
+                            </strong>
+                        </dd>
+
+                        <dt class="col-sm-5">
+                            Description:
+                        </dt>
+                        <dd class="col-sm-7">
+                            {{ route.description|default:"No description" }}
+                        </dd>
+
+                        <dt class="col-sm-5">
+                            Stops:
+                        </dt>
+                        <dd class="col-sm-7">
+                            {{ stops|length }}
+                        </dd>
+
+                        <dt class="col-sm-5">
+                            Students:
+                        </dt>
+                        <dd class="col-sm-7">
+                            {{ student_count }}
+                        </dd>
+
+                        <dt class="col-sm-5">
+                            Status:
+                        </dt>
+                        <dd class="col-sm-7">
+                            {% if route.is_active %}
+                                <span class="badge bg-success">
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger">
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">
+                            Assigned Bus:
+                        </dt>
+                        <dd class="col-sm-7">
+                            {% if assigned_bus %}
+                                {{ assigned_bus.registration }}
+                            {% else %}
+                                <span class="text-muted">
+                                    No bus assigned
+                                </span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stops List -->
+        <div class="col-lg-8 mb-4">
+            <div class="card card-shadow">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-pin-map"></i>
+                        Stops on This Route
+                    </h6>
+                    <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addStopForm">
+                        <i class="bi bi-plus-lg"></i>
+                        Add Stop
+                    </button>
+                </div>
+
+                <!-- Add Stop Form (Collapsible) -->
+                <div class="collapse" id="addStopForm">
+                    <div class="card-body border-bottom">
+                        <form method="POST" action="{% url 'add_stop' route.id %}">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <input type="text" name="name" class="form-control" placeholder="Stop Name" required>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <input type="text" name="address" class="form-control" placeholder="Address" required>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <input type="number" name="order" class="form-control" placeholder="Order" min="1" required>
+                                </div>
+                                <div class="col-md-2 mb-2">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-plus-lg"></i>
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <input type="time" name="pickup_time" class="form-control" placeholder="Pickup Time">
+                                </div>
+                                <div class="col-md-6">
+                                    <input type="time" name="dropoff_time" class="form-control" placeholder="Dropoff Time">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if stops %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Order</th>
+                                        <th>Stop Name</th>
+                                        <th>Address</th>
+                                        <th>Pickup Time</th>
+                                        <th>Dropoff Time</th>
+                                        <th>Status</th>
+                                        <th class="text-center">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stop in stops %}
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-secondary">
+                                                    {{ stop.order }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-pin-fill text-danger"></i>
+                                                {{ stop.name }}
+                                            </td>
+                                            <td>
+                                                {{ stop.address }}
+                                            </td>
+                                            <td>
+                                                {{ stop.pickup_time|default:"-" }}
+                                            </td>
+                                            <td>
+                                                {{ stop.dropoff_time|default:"-" }}
+                                            </td>
+                                            <td>
+                                                {% if stop.is_active %}
+                                                    <span class="badge bg-success">
+                                                        Active
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">
+                                                        Inactive
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="d-flex justify-content-center gap-1">
+                                                    <a href="{% url 'edit_stop' stop.id %}"
+                                                    class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <a href="{% url 'delete_stop' stop.id %}"
+                                                    class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-pin-map display-4 text-muted"></i>
+                            <p class="text-muted mt-2">
+                                No stops added to this route yet.
+                            </p>
+                            <button class="btn btn-sm btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addStopForm">
+                                <i class="bi bi-plus-lg"></i>
+                                Add First Stop
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const errorMessages = document.querySelectorAll('.alert-danger, .alert-warning');
+            if (errorMessages.length > 0) {
+                const form = document.getElementById('addStopForm');
+                if (form) {
+                    form.classList.add('show');
+                }
+            }
+        });
+    </script>
+{% endblock %}
