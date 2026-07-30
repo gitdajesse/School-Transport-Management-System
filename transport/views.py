@@ -895,3 +895,152 @@ def reactivate_route(request, route_id):
     }
 
     return render(request, 'transport/confirm_reactivate_route.html', context)
+
+
+@login_required
+def add_stop(request, route_id):
+    """ Add a stop to a route """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can add stops.')
+        return redirect('index')
+
+    route = get_object_or_404(Route, id = route_id)
+
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        address = request.POST.get('address')
+        order = request.POST.get('order')
+        pickup_time = request.POST.get('pickup_time')
+        dropoff_time = request.POST.get('dropoff_time')
+
+        # Validation
+        if not name:
+            messages.error(request, 'Please enter the stop name.')
+            return redirect('route_detail', route_id = route_id)
+        if not address:
+            messages.error(request, 'Please enter the stop address.')
+            return redirect('route_detail', route_id = route_id)
+        if not order:
+            messages.error(request, 'Please enter the stop order.')
+            return redirect('route_detail', route_id = route_id)
+
+        try:
+            order = int(order)
+            if order < 1:
+                messages.error(request, 'Order must be a positive number.')
+                return redirect('route_detail', route_id = route_id)
+        except ValueError:
+            messages.error(request, 'Order must be a number.')
+            return redirect('route_detail', route_id = route_id)
+
+        # Check if order already exists for this route
+        if Stop.objects.filter(route = route, order = order).exists():
+            messages.error(request, f'Stop order {order} already exists for this route.')
+            return redirect('route_detail', route_id = route_id)
+
+        try:
+            stop = Stop.objects.create(
+                route = route,
+                name = name,
+                address = address,
+                order = order,
+                pickup_time = pickup_time or None,
+                dropoff_time = dropoff_time or None,
+                is_active = True
+            )
+
+            messages.success(request, f'Stop "{name}" added to route "{route.name}" !')
+        except Exception as e:
+            messages.error(request, f'Error adding stop: {str(e)}')
+            return redirect('route_detail', route_id = route_id)
+    else:
+        return redirect('route_detail', route_id = route_id)
+
+
+@login_required
+def edit_stop(request, stop_id):
+    """ Edit a stop """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can edit stops.')
+        return redirect('index')
+
+    stop = get_object_or_404(Stop, id = stop_id)
+    route = stop.route
+
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        order = request.POST.get('order')
+        address = request.POST.get('address')
+        pickup_time = request.POST.get('pickup_time')
+        dropoff_time = request.POST.get('dropoff_time')
+        is_active = request.POST.get('is_active') == 'on'
+
+        # Validation
+        if not name:
+            messages.error(request, 'Please enter the stop name.')
+            return redirect('route_detail', route_id = route.id)
+        if not address:
+            messages.error(request, 'Please enter the stop address.')
+            return redirect('route_detail', route_id = route.id)
+        if not order:
+            messages.error(request, 'Please enter the stop order.')
+            return redirect('route_detail', route_id = route.id)
+
+        try:
+            order = int(order)
+            if order < 1:
+                messages.error(request, 'Order must be a positive number.')
+                return redirect('route_detail', route_id = route.id)
+        except ValueError:
+            messages.error(request, 'Order must be a number.')
+            return redirect('route_detail', route_id = route.id)
+
+        # Check if order already exists(excluding this stop)
+        if Stop.objects.filter(route = route, order = order).exclude(id = stop.id).exists():
+            messages.error(request, f'Stop order {order} already exists for this route.')
+            return redirect('route_detail', route_id = route.id)
+
+        try:
+            stop.name = name
+            stop.order = order
+            stop.address = address
+            stop.pickup_time = pickup_time or None
+            stop.dropoff_time = dropoff_time or None
+            stop.is_active = is_active
+            stop.save()
+
+            messages.success(request, f'Stop "{name}" updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating stop: {str(e)}')
+            return redirect('route_detail', route_id = route.id)
+    else:
+        context = {
+            'stop': stop,
+            'route': route
+        }
+
+        return redirect(request, 'transport/edit_stop.html', context)
+
+
+@login_required
+def delete_stop(request, stop_id):
+    """ Delete a stop  """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. ONly admins can delete stops.')
+        return redirect('index')
+
+    stop = get_object_or_404(Stop, id = stop_id)
+    route = stop.route
+
+    if request.method == 'POST':
+        stop.delete()
+        messages.success(request, f'Stop "{stop.name}" has been removed.')
+        return redirect('route_detail', route_id = route.id)
+
+    else:
+        context = {
+            'stop': stop,
+            'route': route
+        }
+
+        return render(request, 'trasnport/confirm_delete_stop.html', context)

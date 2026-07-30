@@ -1,0 +1,183 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Edit Stop - {{ stop.name }}
+{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-pencil-square"></i>
+            Edit Stop
+        </h1>
+        <a href="{% url 'route_detail' route.id %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>
+            Back to Route
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pin-map"></i>
+                        Editing: {{ stop.name }}
+                        <br>
+                        <small class="text-muted">
+                            Route: {{ route.name }}
+                        </small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'edit_stop' stop.id %}">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Stop Name
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="text"
+                                    name="name"
+                                    class="form-control"
+                                    value="{{ stop.name }}"
+                                    required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Order
+                                    <span class="text-danger">
+                                        *
+                                    </span>
+                                </label>
+                                <input type="number"
+                                    name="order"
+                                    class="form-control"
+                                    value="{{ stop.order }}"
+                                    min="1"
+                                    required>
+                                <small class="text-muted">
+                                    The sequence number of this stop on the route
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">
+                                Address
+                                <span class="text-danger">
+                                    *
+                                </span>
+                            </label>
+                            <input type="text"
+                                name="address"
+                                class="form-control"
+                                value="{{ stop.address }}"
+                                required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Pickup Time
+                                </label>
+                                <input type="time"
+                                    name="pickup_time"
+                                    class="form-control"
+                                    value="{{ stop.pickup_time|time:'H:i' }}">
+                                <small class="text-muted">
+                                    When the bus picks up students at this stop
+                                </small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">
+                                    Dropoff Time
+                                </label>
+                                <input type="time"
+                                    name="dropoff_time"
+                                    class="form-control"
+                                    value="{{ stop.dropoff_time|time:'H:i' }}">
+                                <small class="text-muted">
+                                    When the bus drops off students at this stop
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Status Toggle -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input"
+                                    type="checkbox"
+                                    name="is_active"
+                                    id="isActive"
+                                    {% if stop.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="isActive">
+                                    <span class="badge
+                                    {% if stop.is_active %}
+                                        bg-success
+                                    {% else %}
+                                        bg-danger
+                                    {% endif %}">
+                                        {% if stop.is_active %}
+                                            Active
+                                        {% else %}
+                                            Inactive
+                                        {% endif %}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'route_detail' route.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="card card-shadow mt-4 border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Danger Zone
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <p class="mb-0">
+                                <strong>Delete Stop</strong>
+                                <br>
+                                <small class="text-muted">
+                                    This will permanently remove {{ stop.name }} from the route.
+                                    This action cannot be undone.
+                                </small>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <a href="{% url 'delete_stop' stop.id %}"
+                            class="btn btn-danger">
+                                <i class="bi bi-trash"></i>
+                                Delete
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

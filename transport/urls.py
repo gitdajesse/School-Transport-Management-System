@@ -33,4 +33,9 @@ urlpatterns = [
     path('routes/edit/<int:route_id>/', views.edit_route, name = 'edit_route'),
     path('routes/deactivate/<int:route_id>/', views.deactivate_route, name = 'deactivate_route'),
     path('routes/reactivate/<int:route_id>/', views.reactivate_route, name = 'reactivate_route'),
+
+    # Stop management URLs
+    path('routes/add-stop/<int:route_id>/', views.add_stop, name = 'add_stop'),
+    path('stops/edit/<int:stop_id>/', views.edit_stop, name = 'edit_stop'),
+    path('stops/delete/<int:stop_id>/', views.delete_stop, name = 'delete_stop'),
 ]
