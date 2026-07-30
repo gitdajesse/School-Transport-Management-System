@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 # Create your models here.
 class User(AbstractUser):
@@ -114,6 +115,7 @@ class Notification(models.Model):
         ('attendance', 'Attendance Update'),
         ('fee', 'Fee Reminder'),
         ('route', 'Route Change'),
+        ('bus', 'Bus Assignment'),
         ('system', 'System Alert'),
         ('general', 'General Announcement'),
     )
@@ -124,6 +126,7 @@ class Notification(models.Model):
         ('app', 'In-App'),
     )
 
+    is_automatic = models.BooleanField(default = True, help_text = "Was this triggered automatically by the system?")
     recipient = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'notifications')
     notification_type = models.CharField(max_length = 20, choices = NOTIFICATION_TYPES)
     delivery_method = models.CharField(max_length = 10, choices = DELIVERY_METHODS)
@@ -134,8 +137,20 @@ class Notification(models.Model):
     created_at = models.DateTimeField(auto_now_add = True)
     sent_at = models.DateTimeField(null = True, blank = True)
 
+    class Meta:
+        ordering = ['-created_at']
+
     def __str__(self):
         return f"{self.recipient.username} - {self.subject[:50]}"
+
+    def mark_as_read(self):
+        self.read = True
+        self.save()
+
+    def mark_as_delivered(self):
+        self.delivered = True
+        self.sent_at = timezone.now()
+        self.save()
 
 
 class RouteAssignment(models.Model):
