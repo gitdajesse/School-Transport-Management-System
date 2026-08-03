@@ -20,8 +20,6 @@
 
     {% if user.is_authenticated %}
         <!-- Logged In View -->
-
-
         <!-- Quick Actions -->
         <div class="row justify-content-center mt-4">
             <div class="col-md-8">
@@ -45,14 +43,17 @@
                                 </a>
                             {% elif user.user_type == 'assistant' %}
                                 <a href="{% url 'assistant_dashboard' %}" class="btn btn-info btn-lg px-5 text-white">
-                                    <i class="bi bi-bus-front"></i> Assistant Dashboard
+                                    <i class="bi bi-bus-front"></i>
+                                     Assistant Dashboard
                                 </a>
-                                <a href="#" class="btn btn-outline-primary">
-                                    <i class="bi bi-check2-square"></i> Take Attendance
+                                <a href="{% url 'manage_attendance' %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-check2-square"></i>
+                                    Manage Attendance
                                 </a>
                             {% elif user.user_type == 'admin' %}
                                 <a href="{% url 'admin_dashboard' %}" class="btn btn-primary btn-lg px-5">
-                                    <i class="bi bi-shield-lock"></i> Admin Dashboard
+                                    <i class="bi bi-shield-lock"></i>
+                                    Admin Dashboard
                                 </a>
                                 <a href="{% url 'manage_system' %}" class="btn btn-outline-danger">
                                     <i class="bi bi-tools"></i>
@@ -161,7 +162,7 @@
                         <ul class="list-unstyled text-start text-muted">
                             <li>
                                 <i class="bi bi-check-circle text-success"></i>
-                                    Real-time tracking
+                                 Real-time tracking
                                 </li>
                             <li>
                                 <i class="bi bi-check-circle text-success"></i>

@@ -43,4 +43,8 @@ urlpatterns = [
     path('notifications/', views.notification_list, name = 'notification_list'),
     path('notifications/detail/<int:notification_id>/', views.notification_detail, name = 'notification_detail'),
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name = 'mark_all_notifications_read'),
+
+    # Attendance managemnt URLs
+    path('manage-attendance/', views.manage_attendance, name = 'manage_attendance'),
+    path('attendance/assistant/', views.assistant_attendance, name = 'assistant_attendance'),
 ]

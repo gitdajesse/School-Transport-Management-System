@@ -4,6 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import IntegrityError
 from django.utils import timezone
+from django.db.models import Count, Q
+from datetime import datetime, timedelta
 
 from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop
 
@@ -1258,3 +1260,73 @@ def mark_all_notifications_read(request):
     Notification.objects.filter(recipoent = request.user, read = False).update(read = True)
     messages.success(request, 'All notifications marked as read.')
     return redirect('notification_list')
+
+
+@login_required
+def manage_attendance(request):
+    """ Central location to manage the models """
+    # Only allow assitants
+    if request.user.user_type != 'assistant':
+        messages.error(request, 'Access denied. You are not an admin.')
+        return redirect('index')
+
+    return render(request, 'transport/manage_attendance.html')
+
+
+@login_required
+def assistant_attendance(request):
+    """
+    View for assistants to recored attendance for their bus.
+    Shows today's students and allows marking pickup/dropoff.
+    """
+    if request.user.user_type != 'assistant':
+        messages.error(request, 'Access denied. Only assistants can record attendance.')
+        return redirect('index')
+
+    # Get the assistant's profile
+    try:
+        assistant = request.user.assistant_profile
+
+        if not assistant.bus:
+            messages.error(request, 'You have not been assigned to a bus yet.')
+            return redirect('index')
+    except Assistant.DoesNotExist:
+        messages.error(request, 'Assistant profile not found.')
+        return redirect('index')
+
+    bus = assistant.bus
+    today = timezone.now().date()
+
+    # Get all students on this bus
+    students = Student.objects.filter(bus = bus, is_active = True).order_by('name')
+
+    # Get today's attendance records for these students
+    attendance_records = {}
+
+    for student in students:
+        try:
+            record = Attendance.objects.get(student = student, date = today)
+            attendance_records[student.id] = record
+        except Attendance.DoesNotExist:
+            attendance_records[student.id] = None
+
+    # Statistics
+    total_students = students.count()
+    picked_up = len([s for s in students if attendance_records.get(s.id) and attendance_records[s.id].status in ['picked_up', 'dropped_off']])
+    dropped_off = len([s for s in students if attendance_records.get(s.id) and attendance_records[s.id].status == 'dropped_off'])
+    absent = len([s for s in students if attendance_records.get(s.id) and attendance_records[s.id].status == 'absent'])
+    pending = total_students - picked_up - absent
+
+    context = {
+        'bus': bus,
+        'students': students,
+        'attendance_records': attendance_records,
+        'today': today,
+        'total_students': total_students,
+        'picked_up': picked_up,
+        'dropped_off': dropped_off,
+        'absent': absent,
+        'pending': pending,
+        'assistant': assistant,
+    }
+    return render(request, 'transport/assistant_attendance.html', context)

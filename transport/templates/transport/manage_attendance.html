@@ -1,0 +1,38 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Assitant - Manage System
+{% endblock %}
+
+{% block body %}
+    <h1 class="page-title">
+        <i class="bi bi-tools"></i>
+        Manage Attendance
+    </h1>
+
+    <div class="row">
+        <!-- Quick Links -->
+        <div class="col-lg-6">
+            <div class="card card-shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-link"></i>
+                        Quick Links
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{% url 'assistant_attendance' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-clipboard-check text-primary"></i>
+                            Take attendance
+                        </a>
+                        <a href="{% url 'assistant_dashboard' %}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-speedometer2 text-danger"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
