@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import IntegrityError
+from django.utils import timezone
 
 from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop
 
@@ -324,6 +325,9 @@ def student_list(request):
                 is_active = True
             )
 
+            # Send notification to parent
+            notify_parents_about_new_student(student)
+
             messages.success(request, f'Successfully added {full_name} as a student!')
 
             # Redirect to student list
@@ -367,6 +371,7 @@ def edit_student(request, student_id):
         return redirect('index')
 
     student = get_object_or_404(Student, id = student_id)
+    old_bus = student.bus
 
     # Access the form
     if request.method == 'POST':
@@ -381,8 +386,12 @@ def edit_student(request, student_id):
         bus_registration = request.POST.get('bus')
         if bus_registration:
             try:
-                bus_obj = Bus.objects.get(registration = bus_registration)
-                student.bus = bus_obj
+                new_bus = Bus.objects.get(registartion = bus_registration)
+
+                # If bus changed, notify parent
+                if old_bus != new_bus:
+                    student.bus = new_bus
+                    notify_parents_about_bus_change(student, old_bus, new_bus)
             except Bus.DoesNotExist:
                 messages.error(request, 'Bus not found.')
 
@@ -647,11 +656,15 @@ def deactivate_bus(request, bus_id):
 
     # Check if students are assigned to this bus
     students = Student.objects.filter(bus = bus, is_active = True)
+
     if students.exists():
         messages.warning(request, f'Bus "{bus.registration}" has {students.count()} students assigned.' 'Please reassign students before deactivating.')
         return redirect('bus_list')
 
     if request.method == 'POST':
+        for student in students:
+            notify_parents_about_bus_change(student, bus, None)
+
         bus.is_active = False
         bus.save()
 
@@ -660,7 +673,8 @@ def deactivate_bus(request, bus_id):
 
     else:
         context = {
-            'bus': bus
+            'bus': bus,
+            'student_count': students.count()
         }
 
         return render(request, 'transport/confirm_deactivate_bus.html', context)
@@ -860,6 +874,12 @@ def deactivate_route(request, route_id):
             messages.warning(request, f'Route "{route.name}" has {students.count()} students assigned.' 'Please reassign students before deactivating.')
             return redirect('route_list')
 
+        notify_parents_about_route_change(
+            route,
+            students,
+            f"Route {route.name} has been deactivated. Please check for alternative arrangements."
+        )
+
         route.is_active = False
         route.save()
 
@@ -1044,3 +1064,197 @@ def delete_stop(request, stop_id):
         }
 
         return render(request, 'trasnport/confirm_delete_stop.html', context)
+
+
+def send_notification(recipient, notification_type, subject, message, delivery_method = 'app'):
+    """ Helper function to create and send a notification """
+    try:
+        notification = Notification.objects.create(
+            recipent = recipient,
+            notification_type = notification_type,
+            delivery_method = delivery_method,
+            subject = subject,
+            message = message,
+            is_automatic = True
+        )
+
+        notification.mark_as_delivered()
+        return notification
+    except Exception as e:
+        print(f"Error sending notification: {e}")
+        return None
+
+
+def notify_parents_about_bus_change(student, old_bus, new_bus):
+    """ Notify parents when their child's bus changes """
+    parent = student.parent
+    user = parent.user
+
+    subject = f"Bus change for {student.name}"
+    message = f"""
+    Dear {parent.name},
+
+    Your child {student.name} has been reassigned to a different bus.
+
+    Old Bus: {old_bus.registration if old_bus else 'None'} - {old_bus.route_name if old_bus else 'N/A'}
+    New Bus: {new_bus.registration if new_bus else 'None'} - {new_bus.route_name if new_bus else 'N/A'}
+
+    If you have any questions, please contact the school administration.
+
+    Thank you,
+    School Transport Management System
+    """
+
+    return send_notification(
+        recipient = user,
+        notification_type = 'bus',
+        subject = subject,
+        message = message,
+        delivery_method = 'app'
+    )
+
+
+def notify_parents_about_route_change(route, affected_students, change_description):
+    """ Notify parents when a route changes """
+    notifications_sent = 0
+
+    for student in affected_students:
+        parent = student.parent
+        user = parent.user
+
+        subject = f"Route Change Alert - {route.name}"
+        message = f"""
+        Dear {parent.name},
+
+        This is to inform you that there has been a change to the transport route for your child {student.name}.
+
+        Route: {route.name}
+        Change: {change_description}
+
+        The updated route information is available in your dashboard.
+
+        If you have any questions, please contact the school administration.
+
+        Thank you,
+        School Transport Management System
+        """
+
+        notification = send_notification(
+            recipient = user,
+            notification_type = 'route',
+            subject = subject,
+            message = message,
+            delivery_method = 'app'
+        )
+
+        if notification:
+            notifications_sent += 1
+
+    return notifications_sent
+
+
+def notify_parents_about_new_student(student):
+    """ Notify parents when their child is added to the system """
+    parent = student.parent
+    user = parent.user
+
+    subject = f"Welcome! {student.name} has been registered"
+    message = f"""
+    Dear {parent.name},
+
+    This is to confirm that your chikd {student.name} has been successfully registered in the School Transport Management System.
+
+    Student Details:
+    - Name: {student.name}
+    - Grade: {student.grade}
+    - Bus: {student.bus.registration} - {student.bus.route_name}
+    - Pickup: {student.pick_up_location}
+    - Dropoff: {student.drop_off_location}
+
+    You can track your child's transport progress through your parent dashboard.
+
+    Thank you,
+    School Transport Management System
+    """
+
+    return send_notification(
+        recipient = user,
+        notification_type = 'general',
+        subject = subject,
+        message = message,
+        delivery_method = 'app'
+    )
+
+
+def notify_parents_about_new_bus(student, bus):
+    """ Notify parents when their child is assigned to a new bus """
+    parent = student.parent
+    user = parent.user
+
+    subject = f"Bus Assignment for {student.name}"
+    message = f"""
+    Dear {parent.name}
+
+    Your child {student.name} has been assigned to a transport bus.
+
+    Bus Details:
+    - Registration: {bus.registration}
+    - Driver: {bus.driver_name}
+    - Route: {bus.route_name}
+    - Capacity: {bus.capacity}
+
+    You can track your child's transport progress through your parent dashboard.
+
+    Thank you,
+    School Transport Management System
+    """
+
+    return send_notification(
+        recipient = user,
+        notification_type = 'bus',
+        subject = subject,
+        message = message,
+        delivery_method = 'app',
+    )
+
+
+@login_required
+def notification_list(request):
+    """ View all notifications for the current user """
+    notifications = Notification.object.filter(recipient = request.user).order_by('-created_at')
+
+    # Mark all as read
+    unread = notifications.filter(read = False)
+    for notif in unread:
+        notif.mark_as_read()
+
+    context = {
+        'notifiactions': notifications,
+        'unread_count': unread.count(),
+        'total_count': notifications.count(),
+    }
+
+    return render(request, 'transport/notification_list.html', context)
+
+
+@login_required
+def notification_detail(request, notification_id):
+    """ View a specific notification """
+    notification = get_object_or_404(Notification, id = notification_id, recipient = request.user)
+
+    if not notification.read:
+        notification.mark_as_read()
+
+    context = {
+        'notification': notification
+    }
+
+    return render(request, 'transport/notification_detail.html', context)
+
+
+@login_required
+def mark_all_notifications_read(request):
+    """ Mark all notifications as read """
+    Notification.objects.filter(recipoent = request.user, read = False).update(read = True)
+    messages.success(request, 'All notifications marked as read.')
+    return redirect('notification_list')

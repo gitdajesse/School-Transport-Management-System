@@ -38,4 +38,9 @@ urlpatterns = [
     path('routes/add-stop/<int:route_id>/', views.add_stop, name = 'add_stop'),
     path('stops/edit/<int:stop_id>/', views.edit_stop, name = 'edit_stop'),
     path('stops/delete/<int:stop_id>/', views.delete_stop, name = 'delete_stop'),
+
+    # Notification management URLs
+    path('notifications/', views.notification_list, name = 'notification_list'),
+    path('notifications/detail/<int:notification_id>/', views.notification_detail, name = 'notification_detail'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name = 'mark_all_notifications_read'),
 ]
