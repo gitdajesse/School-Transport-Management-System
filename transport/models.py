@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils import timezone
 
@@ -91,23 +91,125 @@ class Attendance(models.Model):
         ('picked_up', 'Picked Up'),
         ('dropped_off', 'Dropped Off'),
         ('absent', 'Absent'),
-        ('late', 'Late')
+        ('late', 'Late'),
+        ('pending', 'Pending')
     )
+
+    # Core fields
     student = models.ForeignKey(Student, on_delete = models.CASCADE, related_name = 'attendance_records')
-    assistant = models.ForeignKey(Assistant, on_delete = models.SET_NULL, null = True)
-    bus = models.ForeignKey(Bus, on_delete = models.CASCADE)
-    date = models.DateTimeField(auto_now_add = True)
+    assistant = models.ForeignKey(Assistant, on_delete = models.SET_NULL, null = True, related_name = 'attendance_records')
+    bus = models.ForeignKey(Bus, on_delete = models.CASCADE, related_name = 'attendance_records')
+
+    # Date and time fields
+    date = models.DateField(auto_now_add = True)
     pickup_time = models.DateTimeField(null = True, blank = True)
     dropoff_time = models.DateTimeField(null = True, blank = True)
-    status = models.CharField(max_length = 20, choices = ATTENDANCE_STATUS)
-    notes = models.TextField(blank = True)
     recorded_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    # Status and additional info
+    status = models.CharField(max_length = 20, choices = ATTENDANCE_STATUS, default = 'pending')
+    notes = models.TextField(blank = True, null = True)
+
+    # Track who made changes
+    recorded_by = models.ForeignKey('User', on_delete = models.SET_NULL, null = True, related_name = 'recorded_attendances')
+    last_modified_by = models.ForeignKey('User', on_delete = models.SET_NULL, null = True, related_name = 'modified_attendances')
 
     class Meta:
         unique_together = ['student', 'date']
+        ordering = ['-date', '-recorded_at']
 
     def __str__(self):
         return f"{self.student.name} - {self.date} - {self.status}"
+
+    def is_picked_up(self):
+        return self.status in ['picked_up', 'dropped_off']
+
+    def is_dropped_off(self):
+        return self.status == 'dropped_off'
+
+    def is_absent(self):
+        return self.status == 'absent'
+
+    def is_late(self):
+        return self.status == 'late'
+
+    def get_time_since_pickup(self):
+        """ Return time since pickup in minutes """
+        if self.pickup_time:
+            delta = timezone.now() - self.pickup_time
+            return int(delta.total_seconds() / 60)
+        return None
+
+    def get_formatted_timeline(self):
+        """ Return a formatted timeline of the attendance """
+        timeline = []
+
+        if self.pickup_time:
+            timeline.append({
+                'event': 'Picked Up',
+                'time': self.pickup_time,
+                'formatted_time': self.pickup_time.strftime('%I:%M %p')
+            })
+        if self.dropoff_time:
+            timeline.append({
+                'event': 'Dropped Off',
+                'time': self.dropoff_time,
+                'formatted_time': self.dropoff_time.strftime('%I:%M %p')
+            })
+        return timeline
+
+    def mark_picked_up(self, user = None, notes = None):
+        """ Mark student as picked up """
+        self.status = 'picked_up'
+        self.pickup_time = timezone.now()
+
+        if notes:
+            self.notes = notes
+        if user:
+            self.recorded_by = user
+            self.last_modified_by = user
+        self.save()
+        return self
+
+    def mark_dropped_off(self, user = None, notes = None):
+        """ Mark student as dropped off """
+        if not self.pickup_time:
+            raise ValueError("Cannot drop off a student who wasn't picked up")
+        self.status = 'dropped_off'
+        self.dropoff_time = timezone.now()
+
+        if notes:
+            self.notes = notes
+        if user:
+            self.last_modified_by = user
+        self.save()
+        return self
+
+    def mark_absent(self, user = None, notes = None):
+        """ Mark student as absent """
+        self.status = 'absent'
+
+        if notes:
+            self.notes = notes
+        if user:
+            self.recorded_by = user
+            self.last_modified_by = user
+        self.save()
+        return self
+
+    def mark_late(self, user = None, notes = None):
+        """ Mark student as late """
+        self.status = 'late'
+        self.pickup_time = timezone.now()
+
+        if notes:
+            self.notes = notes
+        if user:
+            self.recorded_by = user
+            self.last_modified_by = user
+        self.save()
+        return self
 
 
 class Notification(models.Model):
