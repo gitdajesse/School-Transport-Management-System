@@ -6,6 +6,7 @@ from django.db import IntegrityError
 from django.utils import timezone
 from django.db.models import Count, Q
 from datetime import datetime, timedelta
+from django.http import JsonResponse
 
 from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop
 
@@ -1330,3 +1331,183 @@ def assistant_attendance(request):
         'assistant': assistant,
     }
     return render(request, 'transport/assistant_attendance.html', context)
+
+
+@login_required
+def mark_attendance(request):
+    """
+    AJAX endpoint for marking student attendance.
+    Handles pickup, dropoff, absent and late.
+    """
+    if request.user.user_type != 'assistant':
+        return JsonResponse({
+            'error': 'Access denied'}, status = 403
+            )
+
+    if request.method != 'POST':
+        return JsonResponse({
+            'error': 'Invalid request'}, status = 400
+            )
+
+    student_id = request.POST.get('student_id')
+    action = request.POST.get('action')
+    notes = request.POST.get('notes', '')
+
+    if not student_id:
+        return JsonResponse({
+            'error': 'Missing field for student ID'}, status = 400
+            )
+
+    if not action:
+        return JsonResponse({
+            'error': 'Missing field for action'}, status = 400
+            )
+
+    try:
+        student = Student.objects.filter(id = student_id)
+        assistant = request.user.assistant_profile
+
+        # Verify student is on assistant's bus
+        if student.bus != assistant.bus:
+            return JsonResponse({
+                'error': 'Student not on your bus'}, status = 403
+                )
+
+        today = timezone.now().date()
+        attendance, created = Attendance.objects.get_or_create(
+            student = student,
+            date = today,
+            defaults = {
+                'bus': student.bus,
+                'assistant': assistant,
+                'recorded_by': request.user,
+                'last_modified_by': request.user,
+                'status': 'pending'
+            }
+        )
+
+        # Mark the appropriate status
+        if action == 'pickup':
+            attendance.mark_picked_up(request.user, notes)
+            message = f"{student.name} marked as picked up"
+
+        elif action == 'dropoff':
+            if not attendance.pickup_time:
+                return JsonResponse({
+                    'error': 'Student was not picked up'}, status = 400
+                    )
+            attendance.mark_dropped_off(request.user, notes)
+            message = f"{student.name} marked as dropped off"
+
+        elif action == 'absent':
+            attendance.mark_absent(request.user, notes)
+            message = f"{student.name} marked as absent"
+
+        elif action == 'late':
+            attendance.mark_late(request.user, notes)
+            message = f"{student.name} marked as late"
+
+        else:
+            return JsonResponse({
+                'error': 'Invalid action'}, status = 400
+                )
+
+        # Trigger notifications
+        if action == 'pickup':
+            sent_pickup_notification(student, attendance)
+        elif action == 'dropoff':
+            send_dropoff_notification(student, attendance)
+        elif action == 'absent':
+            send_absent_notification(student, attendance)
+        elif action == 'late':
+            send_late_notification(student, attendance)
+
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'status': attendance.status,
+            'pickup_time': attendance.pickup_time.strftime('%I:%M %p') if attendance.pickup_time else None,
+            'dropoff_time': attendance.dropoff_time.strftime('%I:%M %p') if attendance.dropoff_time else None,
+            'is_picked_up': attendance.is_picked_up(),
+            'is_dropped_off': attendance.is_dropped_off(),
+            'is_absent': attendance.is_absent(),
+            'is_late': attendance.is_late(),
+        })
+
+    except Student.DoesNotExist:
+        return JsonResponse({
+            'error': 'Student not found'}, status = 404
+            )
+    except Assistant.DoesNotExist:
+        return JsonResponse({
+            'error': 'Assistant profile not found'}, status = 404
+            )
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)}, status = 500
+            )
+
+
+@login_required
+def manage_payment(request):
+    """ Central location to manage the models """
+    # Only allow assitants
+    if request.user.user_type != 'parent':
+        messages.error(request, 'Access denied. You are not a parent.')
+        return redirect('index')
+
+    return render(request, 'transport/manage_payment.html')
+
+
+@login_required
+def parent_attendance(request):
+    """
+    View for parents to track their children's attendance.
+    Shows all children and their current location.
+    """
+    if request.user.user_type != 'parent':
+        messages.error(request, 'Access denied. Only parents can view attendance.')
+        return redirect('index')
+
+    try:
+        parent = request.user.parent_profile
+    except Parent.DoesNotExist:
+        messages.error(request, 'Parent profile not found')
+        return redirect('index')
+
+    children = parent.children.filter(is_active = True).order_by('name')
+    today = timezone.now().date()
+
+    # Get today's attendance for each child
+    attendance_data = []
+
+    for child in children:
+        try:
+            record = Attendance.objects.get(student = child, date = today)
+            status = record.status
+            pickup_time = record.pickup_time
+            dropoff_time = record.dropoff_time
+            has_record = True
+        except Attendance.DoesNotExist:
+            status = 'pending'
+            pickup_time = None
+            dropoff_time = None
+            has_record = False
+
+        attendance_data.append({
+            'student': child,
+            'status': status,
+            'pickup_time': pickup_time,
+            'dropoff_time': dropoff_time,
+            'has_record': has_record,
+            'bus': child.bus,
+            'grade': child.grade,
+        })
+
+    context = {
+        'children': attendance_data,
+        'today': today,
+        'parent': parent,
+    }
+
+    return render(request, 'transport/parent_attendance.html', context)
