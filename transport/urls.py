@@ -51,4 +51,5 @@ urlpatterns = [
     path('attendance/mark/', views.mark_attendance, name = 'mark_attendance'),
     path('manage-payment/', views.manage_payment, name = 'manage_payment'),
     path('attendance/parent/', views.parent_attendance, name = 'parent_attendance'),
+    path('attendance/admin/', views.admin_attendance_dashboard, name = 'admin_attendance_dashboard'),
 ]

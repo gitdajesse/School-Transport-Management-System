@@ -1,0 +1,220 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Attendance Dashboard - Admin
+{% endblock %}
+
+{% block body %}
+    <h1 class="page-title">
+        <i class="bi bi-graph-up"></i>
+        Attendance Dashboard
+    </h1>
+    <p class="text-muted">
+        {{ today|date:"l, F d, Y" }}
+    </p>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">
+                        Total Students
+                    </h6>
+                    <h3 class="mb-0">
+                        {{ total_students }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">
+                        Picked Up
+                    </h6>
+                    <h3 class="mb-0">
+                        {{ picked_up }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">
+                        Absent
+                    </h6>
+                    <h3 class="mb-0">
+                        {{ absent }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">
+                        Pending
+                    </h6>
+                    <h3 class="mb-0">
+                        {{ pending }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bus Statistics -->
+    <div class="card card-shadow mb-4">
+        <div class="card-header bg-white">
+            <h6 class="mb-0"><i class="bi bi-bus-front"></i>
+                Attendance by Bus
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Bus</th>
+                            <th>Total</th>
+                            <th>Picked Up</th>
+                            <th>Absent</th>
+                            <th>Pending</th>
+                            <th>Utilization</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in bus_stats %}
+                            <tr>
+                                <td>
+                                    {{ stat.bus.registration }}
+                                </td>
+                                <td>
+                                    {{ stat.total }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        {{ stat.picked_up }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">
+                                        {{ stat.absent }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning">
+                                        {{ stat.pending }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-{% if stat.utilization > 80 %}success{% elif stat.utilization > 50 %}warning{% else %}danger{% endif %}"
+                                            role="progressbar"
+                                            style="width: {{ stat.utilization }}%;"
+                                            aria-valuenow="{{ stat.utilization }}"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{ stat.utilization|floatformat:0 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Absent Students -->
+    {% if absent_students %}
+        <div class="card card-shadow border-danger mb-4">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i>
+                    Absent Students Today
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Parent</th>
+                                <th>Bus</th>
+                                <th>Contact</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in absent_students %}
+                                <tr>
+                                    <td>
+                                        {{ record.student.name }}
+                                    </td>
+                                    <td>
+                                        {{ record.student.parent.name }}
+                                    </td>
+                                    <td>
+                                        {{ record.bus.registration }}
+                                    </td>
+                                    <td>
+                                        {{ record.student.parent.phone_number }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Recent Activity -->
+    <div class="card card-shadow">
+        <div class="card-header bg-white">
+            <h6 class="mb-0"><i class="bi bi-clock-history"></i>
+                Recent Activity
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+                {% for record in recent_activity %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-person-fill text-primary"></i>
+                            {{ record.student.name }}
+                            <small class="text-muted">
+                                {{ record.get_status_display }}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                Bus {{ record.bus.registration }}
+                            </small>
+                        </div>
+                        <small class="text-muted">
+                            {{ record.recorded_at|timesince }} ago
+                        </small>
+                    </div>
+                {% empty %}
+                    <div class="list-group-item text-muted text-center">
+                        No recent activity
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-speedometer2"></i>
+            Dashboard
+        </a>
+        <a href="#" class="btn btn-primary">
+            <i class="bi bi-file-earmark-text"></i>
+            View Reports
+        </a>
+    </div>
+{% endblock %}

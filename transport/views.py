@@ -1523,3 +1523,83 @@ def system_overview(request):
         }
 
     return render(request, 'transport/system_overview.html', context)
+
+
+@login_required
+def admin_attendance_dashboard(request):
+    """
+    Admin dashboard for monitoring attendance across the system.
+    """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can view the dashboard.')
+        return redirect('index')
+
+    today = timezone.now().date()
+    start_of_week = today - timedelta(days = today.weekday())
+    start_of_month = today.replace(day = 1)
+
+    # Overall statistics for today
+    total_students = Student.objects.filter(is_active = True).count()
+    today_records = Attendance.objects.filter(date = today)
+    picked_up = today_records.filter(status__in = ['picked_up', 'dropped_off']).count()
+    dropped_off = today_records.filter(status = 'dropped_off').count()
+    absent = today_records.filter(status = 'absent').count()
+    late = today_records.filter(status = 'late').count()
+    pending = total_students - today_records.count()
+
+    # Statistics by bus
+    bus_stats = []
+
+    buses = Bus.objects.filter(is_active = True)
+
+    for bus in buses:
+        students_on_bus = Student.objects.filter(bus = bus, is_active = True).count()
+        bus_today = Attendance.objects.filter(bus = bus, date = today)
+        bus_stats.append({
+            'bus': bus,
+            'total': students_on_bus,
+            'picked_up': bus_today.filter(status__in = ['picked_up', 'dropped_off']).count(),
+            'absent': bus_today.filter(status = 'absent').count(),
+            'pending': students_on_bus - bus_today.count(),
+            'utilization': (bus_today.count() / students_on_bus * 100) if students_on_bus > 0 else 0,
+        })
+
+    # Weekly trends
+    weekly_stats = []
+
+    for i in range(7):
+        date = start_of_week + timedelta(days = i)
+        if date <= today:
+            day_records = Attendance.objects.filter(date = date)
+            weekly_stats.append({
+                'date': date,
+                'picked_up': day_records.filter(status__in = ['picked_up', 'dropped_off']).count(),
+                'absent': day_records.filter(status = 'absent').count(),
+                'total': Student.objects.filter(is_active = True).count()
+            })
+
+    # Recent activity
+    recent_activity = Attendance.objects.filter(recorded_at__gte = timezone.now() - timedelta(hours = 24)).order_by('-recorded_at')[:10]
+
+    # Absent students today (for quick action)
+    absent_students = today_records.filter(status = 'absent').select_related('student', 'student__parent')
+
+    context = {
+        'today': today,
+        'total_students': total_students,
+        'picked_up': picked_up,
+        'dropped_off': dropped_off,
+        'absent': absent,
+        'late': late,
+        'pending': pending,
+        'bus_stats': bus_stats,
+        'weekly_stats': weekly_stats,
+        'recent_activity': recent_activity,
+        'absent_students': absent_students,
+        'start_of_week': start_of_week,
+        'stat_of_month': start_of_month,
+    }
+
+    return render(request, 'transport/admin_attendance.html', context)
+
+
