@@ -12,6 +12,7 @@ urlpatterns = [
     path('parent-dashboard/', views.parent_dashboard, name = 'parent_dashboard'),
     path('assistant-dashboard/', views.assistant_dashboard, name = 'assistant_dashboard'),
     path('admin-dashboard/', views.admin_dashboard, name = 'admin_dashboard'),
+    path('system_overview/', views.system_overview, name = 'system_overview'),
 
     # Student management URLs
     path('manage-system/', views.manage_system, name = 'manage_system'),

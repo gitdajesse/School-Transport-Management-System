@@ -192,13 +192,7 @@ def admin_dashboard(request):
         messages.error(request, 'Access denied. You are not an admin.')
         return redirect('index')
     else:
-        context = {
-            'total_students': Student.objects.count(),
-            'total_parents': Parent.objects.count(),
-            'total_assistants': Assistant.objects.count(),
-            'total_buses': Bus.objects.count()
-        }
-        return render (request, 'transport/admin_dashboard.html', context)
+        return render (request, 'transport/admin_dashboard.html')
 
 
 @login_required
@@ -1511,3 +1505,21 @@ def parent_attendance(request):
     }
 
     return render(request, 'transport/parent_attendance.html', context)
+
+
+@login_required
+def system_overview(request):
+    """ Central location to manage the models """
+    # Only allow assitants
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. You are not a admin.')
+        return redirect('index')
+    else:
+        context = {
+            'total_students': Student.objects.count(),
+            'total_parents': Parent.objects.count(),
+            'total_assistants': Assistant.objects.count(),
+            'total_buses': Bus.objects.count()
+        }
+
+    return render(request, 'transport/system_overview.html', context)
