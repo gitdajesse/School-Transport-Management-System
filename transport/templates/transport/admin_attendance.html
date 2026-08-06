@@ -112,11 +112,11 @@
                                 <td>
                                     <div class="progress" style="height: 20px;">
                                         <div class="progress-bar bg-{% if stat.utilization > 80 %}success{% elif stat.utilization > 50 %}warning{% else %}danger{% endif %}"
-                                            role="progressbar"
-                                            style="width: {{ stat.utilization }}%;"
-                                            aria-valuenow="{{ stat.utilization }}"
-                                            aria-valuemin="0"
-                                            aria-valuemax="100">
+                                             role="progressbar"
+                                             style="width: {{ stat.utilization }}%;"
+                                             aria-valuenow="{{ stat.utilization }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
                                             {{ stat.utilization|floatformat:0 }}%
                                         </div>
                                     </div>
@@ -212,7 +212,7 @@
             <i class="bi bi-speedometer2"></i>
             Dashboard
         </a>
-        <a href="#" class="btn btn-primary">
+        <a href="{% url 'attendance_reports' %}" class="btn btn-primary">
             <i class="bi bi-file-earmark-text"></i>
             View Reports
         </a>

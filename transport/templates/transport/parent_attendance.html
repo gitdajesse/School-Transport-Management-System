@@ -5,12 +5,11 @@
 {% endblock %}
 
 {% block body %}
-    <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="page-title">
             <i class="bi bi-person-heart"></i>
             My Children's Attendance
         </h1>
-
         <div>
             <a href="{% url 'manage_payment' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i>
@@ -86,7 +85,7 @@
                             <hr>
                             <div class="d-grid">
                                 <a href="{% url 'attendance_detail' child.student.attendance_records.last.id %}"
-                                class="btn btn-sm btn-outline-primary">
+                                   class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i>
                                     View Details
                                 </a>

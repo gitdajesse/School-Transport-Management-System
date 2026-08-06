@@ -1603,3 +1603,106 @@ def admin_attendance_dashboard(request):
     return render(request, 'transport/admin_attendance.html', context)
 
 
+@login_required
+def attendance_detail(request, attendance_id):
+    """
+    View detailed information about a specific attendance record.
+    """
+
+    attendance = get_object_or_404(Attendance, id = attendance_id)
+
+    # Check permissions
+    if request.user.user_type == 'parent':
+        try:
+            parent = request.user.parent_profile
+            if attendance.student not in parent.children.all():
+                messages.error(request, 'Access denied. This is not your child.')
+                return redirect('parent_attendance')
+        except Parent.DoesNotExist:
+            messages.error(request, 'Parent profile not found.')
+            return redirect('index')
+
+    elif request.user.user_type == 'assistant':
+        try:
+            assistant = request.user.assistant_profile
+            if attendance.bus != assistant.bus:
+                messages.error(request, 'Access denied. This is not your bus.')
+                return redirect('assistant_attendance')
+        except Assistant.DoesNotExist:
+            messages.error(request, 'Assistant profile not found.')
+            return redirect('index')
+
+    # Get all records for this student
+    student_records = Attendance.objects.filter(student = attendance.student).order_by('-date')[:30]
+
+    context = {
+        'attendance': attendance,
+        'student_records': student_records,
+        'timeline': attendance.get_formatted_timeline()
+    }
+
+    return render(request, 'transport/attendance_detail.html', context)
+
+
+@login_required
+def attendance_reports(request):
+    """
+    Generate and view attendance reports.
+    """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can view reports.')
+        return redirect('index')
+
+    # Get filter parameters
+    date_from = request.POST.get('date_from')
+    date_to = request.POST.get('date_to')
+    bus_id = request.POST.get('bus')
+    status_filter = request.POST.get('status')
+
+    # Default to this month
+    if not date_from:
+        date_from = datetime.now().date().replace(day = 1).strftime('%Y-%m-%d')
+    if not date_to:
+        date_to = datetime.now().date().strftime('%Y-%m-%d')
+
+    # Build query
+    records = Attendance.objects.all()
+
+    if date_from:
+        records = records.filter(date__gte = date_from)
+    if date_to:
+        records = records.filter(date__lte = date_to)
+    if bus_id:
+        records = records.filter(bus_id = bus_id)
+    if status_filter:
+        records = records.filter(status = status_filter)
+
+    records = records.select_related('student', 'bus', 'student__parent')
+
+    # Summary statistics
+    total_records = records.count()
+    status_summary = records.values('status').annotate(count = Count('status'))
+
+    # Group by bus
+    bus_summary = records.values('bus__registration', 'bus__route_name').annotate(count = Count('id')).order_by('-count')
+
+    # Group by date
+    date_summary = records.values('date').annotate(count = Count('id')).order_by('-date')
+
+    # Get all buses for filter
+    buses = Bus.objects.filter(is_active = True)
+
+    context = {
+        'records': records[:200],
+        'total_records': total_records,
+        'status_summary': status_summary,
+        'bus_summary': bus_summary,
+        'date_summary': date_summary,
+        'buses': buses,
+        'date_from': date_from,
+        'date_to': date_to,
+        'selected_bus': bus_id,
+        'selected_status': status_filter
+    }
+
+    return render(request, 'transport/attendance_reports.html', context)

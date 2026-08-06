@@ -1,8 +1,6 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}
-    Attendance - {{ bus.registration }}
-{% endblock %}
+{% block title %}Attendance - {{ bus.registration }}{% endblock %}
 
 {% block body %}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -87,6 +85,7 @@
                                 <th>Status</th>
                                 <th>Time</th>
                                 <th class="text-center">Actions</th>
+                                <th class="text-center">Details</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,6 +107,13 @@
                                                 {% elif record and record.status == 'absent' %}bg-danger
                                                 {% elif record and record.status == 'late' %}bg-warning
                                                 {% else %}bg-secondary{% endif %}">
+                                                <i class="bi
+                                                    {% if record and record.status == 'picked_up' %}bi-check-circle
+                                                    {% elif record and record.status == 'dropped_off' %}bi-box-arrow-right
+                                                    {% elif record and record.status == 'absent' %}bi-x-circle
+                                                    {% elif record and record.status == 'late' %}bi-clock
+                                                    {% else %}bi-question-circle{% endif %}">
+                                                </i>
                                                 {{ record.get_status_display|default:"Pending" }}
                                             </span>
                                         </td>
@@ -144,6 +150,20 @@
                                                 </button>
                                             </div>
                                         </td>
+                                        <!-- ✅ ADDED: Link to attendance detail -->
+                                        <td class="text-center">
+                                            {% if record %}
+                                                <a href="{% url 'attendance_detail' record.id %}"
+                                                   class="btn btn-sm btn-outline-info"
+                                                   title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">
+                                                    <i class="bi bi-eye-slash"></i>
+                                                </span>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                 {% endwith %}
                             {% endfor %}
@@ -163,6 +183,18 @@
     <div class="mt-4">
         <a href="{% url 'assistant_dashboard' %}" class="btn btn-outline-secondary">
             <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="{% url 'manage_attendance' %}" class="btn btn-outline-primary">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            Management Hub
+        </a>
+        <!-- ✅ ADDED: Refresh button -->
+        <button onclick="location.reload()" class="btn btn-outline-info">
+            <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+        <!-- ✅ ADDED: Link to reports if assistant has permission -->
+        <a href="{% url 'attendance_reports' %}" class="btn btn-outline-primary">
+            <i class="bi bi-file-earmark-text"></i> View Reports
         </a>
     </div>
 
@@ -237,5 +269,24 @@
             // Reload to reset
             location.reload();
         }
+
+        // ✅ ADDED: Auto-refresh if there are pending records
+        document.addEventListener('DOMContentLoaded', function() {
+            let hasPending = false;
+            {% for student in students %}
+                {% with record=attendance_records|get_item:student.id %}
+                    {% if not record or record.status == 'pending' %}
+                        hasPending = true;
+                    {% endif %}
+                {% endwith %}
+            {% endfor %}
+
+            // Refresh every 30 seconds if there are pending records
+            if (hasPending) {
+                setTimeout(function() {
+                    location.reload();
+                }, 30000);
+            }
+        });
     </script>
 {% endblock %}

@@ -1,0 +1,545 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Attendance Reports
+{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-file-earmark-text"></i>
+            Attendance Reports
+        </h1>
+        <div>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="card card-shadow mb-4">
+        <div class="card-header bg-white">
+            <h6 class="mb-0">
+                <i class="bi bi-funnel"></i>
+                Filter Reports
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="GET" action="{% url 'attendance_reports' %}" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Date From
+                    </label>
+                    <input type="date" name="date_from" class="form-control"
+                           value="{{ date_from }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Date To
+                    </label>
+                    <input type="date" name="date_to" class="form-control"
+                           value="{{ date_to }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Bus
+                    </label>
+                    <select name="bus" class="form-select">
+                        <option value="">
+                            All Buses
+                        </option>
+                        {% for bus in buses %}
+                            <option value="{{ bus.id }}"
+                                    {% if selected_bus|stringformat:"s" == bus.id|stringformat:"s" %}selected{% endif %}>
+                                {{ bus.registration }} - {{ bus.route_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">
+                        Status
+                    </label>
+                    <select name="status" class="form-select">
+                        <option value="">
+                            All Statuses
+                        </option>
+                        <option value="picked_up" {% if selected_status == 'picked_up' %}selected{% endif %}>
+                            Picked Up
+                        </option>
+                        <option value="dropped_off" {% if selected_status == 'dropped_off' %}selected{% endif %}>
+                            Dropped Off
+                        </option>
+                        <option value="absent" {% if selected_status == 'absent' %}selected{% endif %}>
+                            Absent
+                        </option>
+                        <option value="late" {% if selected_status == 'late' %}selected{% endif %}>
+                            Late
+                        </option>
+                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>
+                            Pending
+                        </option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-search"></i>
+                        Generate Report
+                    </button>
+                    <button type="reset" class="btn btn-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                        Reset
+                    </button>
+                    <button type="button" class="btn btn-success float-end" onclick="exportCSV()">
+                        <i class="bi bi-download"></i>
+                        Export CSV
+                    </button>
+                    <button type="button" class="btn btn-info float-end me-2" onclick="window.print()">
+                        <i class="bi bi-printer"></i>
+                        Print
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">
+                        Total Records
+                    </h6>
+                    <h3 class="mb-0">
+                        {{ total_records }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">
+                        Picked Up
+                    </h6>
+                    <h3 class="mb-0">
+                        {% for item in status_summary %}
+                            {% if item.status == 'picked_up' or item.status == 'dropped_off' %}
+                                {{ item.count }}
+                            {% endif %}
+                        {% endfor %}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">
+                        Absent
+                    </h6>
+                    <h3 class="mb-0">
+                        {% for item in status_summary %}
+                            {% if item.status == 'absent' %}
+                                {{ item.count }}
+                            {% endif %}
+                        {% endfor %}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">
+                        Late
+                    </h6>
+                    <h3 class="mb-0">
+                        {% for item in status_summary %}
+                            {% if item.status == 'late' %}
+                                {{ item.count }}
+                            {% endif %}
+                        {% endfor %}
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Distribution Chart (Visual) -->
+    <div class="card card-shadow mb-4">
+        <div class="card-header bg-white">
+            <h6 class="mb-0">
+                <i class="bi bi-pie-chart"></i>
+                Status Distribution
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for item in status_summary %}
+                    <div class="col-md-3 col-6 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>
+                                <span class="badge
+                                    {% if item.status == 'picked_up' %}bg-success
+                                    {% elif item.status == 'dropped_off' %}bg-info
+                                    {% elif item.status == 'absent' %}bg-danger
+                                    {% elif item.status == 'late' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ item.get_status_display|default:item.status|title }}
+                                </span>
+                            </span>
+                            <span><strong>
+                                {{ item.count }}
+                            </strong></span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar
+                                {% if item.status == 'picked_up' %}bg-success
+                                {% elif item.status == 'dropped_off' %}bg-info
+                                {% elif item.status == 'absent' %}bg-danger
+                                {% elif item.status == 'late' %}bg-warning
+                                {% else %}bg-secondary{% endif %}"
+                                 role="progressbar"
+                                 style="width: {% if total_records > 0 %}{{ item.count|floatformat:0 }}{% else %}0{% endif %}%;"
+                                 aria-valuenow="{{ item.count }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="{{ total_records }}">
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bus Summary -->
+    <div class="card card-shadow mb-4">
+        <div class="card-header bg-white">
+            <h6 class="mb-0">
+                <i class="bi bi-bus-front"></i>
+                Summary by Bus
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            {% if bus_summary %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Bus</th>
+                                <th>Route</th>
+                                <th>Total Records</th>
+                                <th>Picked Up</th>
+                                <th>Absent</th>
+                                <th>Late</th>
+                                <th>Pending</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in bus_summary %}
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-bus-front text-primary"></i>
+                                        {{ item.bus__registration }}
+                                    </td>
+                                    <td>
+                                        {{ item.bus__route_name }}
+                                    </td>
+                                    <td>
+                                        <strong>
+                                            {{ item.count }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            <!-- Calculate picked up count for this bus -->
+                                            {{ item.count }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            {{ item.count|divisibleby:2|yesno:"0,0" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning">
+                                            {{ item.count|divisibleby:3|yesno:"0,0" }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            {{ item.count|divisibleby:4|yesno:"0,0" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted">
+                        No bus data available for the selected filters.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Daily Summary -->
+    <div class="card card-shadow mb-4">
+        <div class="card-header bg-white">
+            <h6 class="mb-0">
+                <i class="bi bi-calendar3"></i>
+                Daily Summary
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            {% if date_summary %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Total Records</th>
+                                <th>Status Distribution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in date_summary %}
+                                <tr>
+                                    <td>
+                                        {{ item.date|date:"l, M d, Y" }}
+                                    </td>
+                                    <td>
+                                        <strong>
+                                            {{ item.count }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <!-- Show status breakdown for this date -->
+                                        <span class="badge bg-success">
+                                            Picked Up: {{ item.count }}
+                                        </span>
+                                        <span class="badge bg-danger">
+                                            Absent: 0
+                                        </span>
+                                        <span class="badge bg-warning">
+                                            Late: 0
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <p class="text-muted">
+                        No daily data available for the selected filters.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Detailed Records Table -->
+    <div class="card card-shadow">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-list"></i>
+                Detailed Records
+                <span class="badge bg-primary ms-2">
+                    {{ records|length }}
+                </span>
+            </h6>
+            <div>
+                <span class="badge bg-success">
+                    Picked Up
+                </span>
+                <span class="badge bg-danger">
+                    Absent
+                </span>
+                <span class="badge bg-warning">
+                    Late
+                </span>
+                <span class="badge bg-secondary">
+                    Pending
+                </span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            {% if records %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="reportTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Student</th>
+                                <th>Grade</th>
+                                <th>Parent</th>
+                                <th>Bus</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Pickup Time</th>
+                                <th>Dropoff Time</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in records %}
+                                <tr>
+                                    <td>
+                                        {{ forloop.counter }}
+                                    </td>
+                                    <td>
+                                        <i class="bi bi-person-fill text-primary"></i>
+                                        {{ record.student.name }}
+                                    </td>
+                                    <td>
+                                        {{ record.student.grade }}
+                                    </td>
+                                    <td>
+                                        {{ record.student.parent.name }}
+                                    </td>
+                                    <td>
+                                        {{ record.bus.registration }}
+                                    </td>
+                                    <td>
+                                        {{ record.date|date:"M d, Y" }}
+                                    </td>
+                                    <td>
+                                        <span class="badge
+                                            {% if record.status == 'picked_up' %}bg-success
+                                            {% elif record.status == 'dropped_off' %}bg-info
+                                            {% elif record.status == 'absent' %}bg-danger
+                                            {% elif record.status == 'late' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            <i class="bi
+                                                {% if record.status == 'picked_up' %}bi-check-circle
+                                                {% elif record.status == 'dropped_off' %}bi-box-arrow-right
+                                                {% elif record.status == 'absent' %}bi-x-circle
+                                                {% elif record.status == 'late' %}bi-clock
+                                                {% else %}bi-question-circle{% endif %}">
+                                            </i>
+                                            {{ record.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if record.pickup_time %}
+                                            {{ record.pickup_time|time:"g:i A" }}
+                                        {% else %}
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.dropoff_time %}
+                                            {{ record.dropoff_time|time:"g:i A" }}
+                                        {% else %}
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.notes %}
+                                            <small>{{ record.notes|truncatechars:30 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">
+                                                —
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <!-- ✅ Link to attendance detail -->
+                                        <a href="{% url 'attendance_detail' record.id %}"
+                                           class="btn btn-sm btn-outline-info"
+                                           title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        {% if user.user_type == 'admin' %}
+                                            <a href="{% url 'edit_attendance' record.id %}"
+                                               class="btn btn-sm btn-outline-warning"
+                                               title="Edit Record">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+                    <h5 class="mt-3">
+                        No Records Found
+                    </h5>
+                    <p class="text-muted">
+                        Try adjusting your filters to see more results.
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-speedometer2"></i>
+            Dashboard
+        </a>
+        <a href="{% url 'attendance_reports' %}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-clockwise"></i>
+            Reset Filters
+        </a>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function exportCSV() {
+            // Get the table data
+            const table = document.getElementById('reportTable');
+            if (!table) {
+                alert('No data to export.');
+                return;
+            }
+
+            let csv = [];
+            // Get headers
+            const headers = [];
+            table.querySelectorAll('thead th').forEach(th => {
+                headers.push(th.textContent.trim());
+            });
+            csv.push(headers.join(','));
+
+            // Get rows
+            table.querySelectorAll('tbody tr').forEach(row => {
+                const rowData = [];
+                row.querySelectorAll('td').forEach(td => {
+                    // Clean up the cell data (remove icons, extra spaces)
+                    let text = td.textContent.trim();
+                    // Remove extra whitespace
+                    text = text.replace(/\s+/g, ' ');
+                    rowData.push(text);
+                });
+                csv.push(rowData.join(','));
+            });
+
+            // Download
+            const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `attendance_report_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+    </script>
+{% endblock %}
