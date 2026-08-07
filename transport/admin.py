@@ -25,7 +25,6 @@ class CustomUserAdmin(UserAdmin):
 admin.site.register(User, CustomUserAdmin)
 
 
-@admin.register(Attendance)
 class AttendanceAdmin(admin.ModelAdmin):
     list_display = ('student', 'date', 'status', 'pickup_time', 'dropoff_time', 'bus')
     list_filter = ('status', 'date', 'bus')

@@ -206,11 +206,13 @@ def manage_system(request):
     total_buses = Bus.objects.count()
     total_students = Student.objects.count()
     total_routes = Route.objects.count()
+    total_parents = Parent.objects.count()
 
     context = {
         'total_buses': total_buses,
         'total_students': total_students,
         'total_routes': total_routes,
+        'total_parents': total_parents
     }
 
     return render(request, 'transport/manage_system.html', context)
@@ -1843,4 +1845,95 @@ def parent_list(request):
     Display all parents with their children.
     Handles adding new parents.
     """
-    pass
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can manage parents.')
+        return redirect('index')
+
+    # Get all parents with student count
+    parents = Parent.objects.all().annotate(child_count = Count('children')).order_by('name')
+
+    # Calculate statistsics
+    total_parents = parents.count()
+    active_parents = parents.filter(user__is_active = True).count()
+    inactive_parents = parents.filter(user__is_active = False).count()
+    parents_with_children = parents.filter(child_count__gt = 0).count()
+
+    context = {
+        'parents': parents,
+        'total_parents': total_parents,
+        'active_parents': active_parents,
+        'inactive_parents': inactive_parents,
+        'parents_with_children': parents_with_children
+    }
+
+    # Handle POST request
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name')
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        phone_number = request.POST.get('phone_number')
+        home_address = request.POST.get('home_address')
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+
+        # Validation
+        if not full_name:
+            messages.error(request, 'The full name is required.')
+            return render(request, 'transport/parent_list.html', context)
+        if not username:
+            messages.error(request, 'The username is required.')
+            return render(request, 'transport/parent_list.html', context)
+        if not email:
+            messages.error(request, 'The email is required.')
+            return render(request, 'transport/parent_list.html', context)
+        if not phone_number:
+            messages.error(request, 'The phone_number is required.')
+            return render(request, 'transport/parent_list.html', context)
+        if not home_address:
+            messages.error(request, 'The home_address is required.')
+            return render(request, 'transport/parent_list.html', context)
+        if not password:
+            messages.error(request, 'The password is required.')
+            return render(request, 'transport/parent_list.html', context)
+        if not confirm_password:
+            messages.error(request, 'Need to confirm your password.')
+            return render(request, 'transport/parent_list.html', context)
+
+        if password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+            return render(request, 'transport/parent_list.html', context)
+
+        try:
+            # Create user
+            user = User.object.create(
+                username = username,
+                email = email,
+                password = password
+            )
+            user.user_type = 'parent'
+            user.phone_number = phone_number
+            user.is_active = True
+            user.save()
+
+            # Create parent profile
+            parent = Parent.objects.create(
+                user = user,
+                name = full_name,
+                email = email,
+                phone_number = phone_number,
+                home_address = home_address
+            )
+
+            messages.success(request, f'Parent "{full_name}" added successfully!')
+            return redirect('parent_list')
+
+        except IntegrityError:
+            messages.error(request, f'Username "{username}" already exists.')
+            return render(request, 'trasnport/parent_list.html', context)
+
+        except Exception as e:
+            messages.error(request, f'Error adding parent: {str(e)}')
+            return render(request, 'transport/parent_list.html', context)
+
+    else:
+        return render(request, 'transport/parent_list.html', context)
