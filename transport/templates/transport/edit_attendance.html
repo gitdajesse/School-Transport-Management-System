@@ -1,0 +1,105 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Edit Attendance - {{ attendance.student.name }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-pencil-square"></i> Edit Attendance
+        </h1>
+        <div>
+            <a href="{% url 'attendance_detail' attendance.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Details
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-pencil"></i> Editing: {{ attendance.student.name }}
+                        <br>
+                        <small class="text-muted">{{ attendance.date|date:"l, F d, Y" }}</small>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Status <span class="text-danger">*</span></label>
+                            <select name="status" class="form-select" required>
+                                <option value="">Select Status</option>
+                                {% for status_code, status_label in status_choices %}
+                                    <option value="{{ status_code }}"
+                                            {% if attendance.status == status_code %}selected{% endif %}>
+                                        {{ status_label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" rows="3">{{ attendance.notes|default:'' }}</textarea>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Current Record:</strong>
+                            <br>
+                            Student: {{ attendance.student.name }}
+                            <br>
+                            Bus: {{ attendance.bus.registration }}
+                            <br>
+                            Date: {{ attendance.date|date:"M d, Y" }}
+                            <br>
+                            Status: <span class="badge
+                                {% if attendance.status == 'picked_up' %}bg-success
+                                {% elif attendance.status == 'dropped_off' %}bg-info
+                                {% elif attendance.status == 'absent' %}bg-danger
+                                {% elif attendance.status == 'late' %}bg-warning
+                                {% else %}bg-secondary{% endif %}">
+                                {{ attendance.get_status_display }}
+                            </span>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'attendance_detail' attendance.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card card-shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Record Timeline
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Recorded:</dt>
+                        <dd class="col-sm-8">{{ attendance.recorded_at|date:"M d, Y H:i" }}</dd>
+
+                        <dt class="col-sm-4">Recorded By:</dt>
+                        <dd class="col-sm-8">{{ attendance.recorded_by.username|default:"System" }}</dd>
+
+                        <dt class="col-sm-4">Last Modified:</dt>
+                        <dd class="col-sm-8">{{ attendance.updated_at|date:"M d, Y H:i" }}</dd>
+
+                        <dt class="col-sm-4">Modified By:</dt>
+                        <dd class="col-sm-8">{{ attendance.last_modified_by.username|default:"Unknown" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

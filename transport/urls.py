@@ -54,4 +54,5 @@ urlpatterns = [
     path('attendance/admin/', views.admin_attendance_dashboard, name = 'admin_attendance_dashboard'),
     path('attendance/detail/<int:attendance_id>/', views.attendance_detail, name = 'attendance_detail'),
     path('attendance/reports/', views.attendance_reports, name = 'attendance_reports'),
+    path('attendance/edit/<int:attendance_id>/', views.edit_attendance, name = 'edit_attendance'),
 ]

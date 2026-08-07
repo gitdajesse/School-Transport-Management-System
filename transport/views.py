@@ -1706,3 +1706,38 @@ def attendance_reports(request):
     }
 
     return render(request, 'transport/attendance_reports.html', context)
+
+
+@login_required
+def edit_attendance(request, attendance_id):
+    """
+    Edit an existing attendance record (admin only)
+    """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can edit attendance.')
+        return redirect('index')
+
+    attendance = get_object_or_404(Attendance, id = attendance_id)
+
+    if request.method == 'POST':
+        status = request.POST.get('status')
+        notes = request.POST.get('notes', '')
+
+        if not status:
+            messages.error(request, 'Please select a status')
+            return redirect('edit_attendance', attendance_id = attendance_id)
+
+        attendance.status = status
+        attendance.notes = notes
+        attendance.last_modified_by = request.user
+        attendance.save()
+
+        messages.success(request, f'Attendance for {attendance.student.name} updated successfully.')
+        return redirect('attendance_detail', attendance_id = attendance_id)
+
+    context = {
+        'attendance': attendance,
+        'status_choices': Attendance.ATTENDANCE_STATUS,
+    }
+
+    return render(request, 'transport/edit_attendance.html', context)
