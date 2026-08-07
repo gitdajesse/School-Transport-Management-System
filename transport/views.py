@@ -1408,7 +1408,7 @@ def mark_attendance(request):
 
         # Trigger notifications
         if action == 'pickup':
-            sent_pickup_notification(student, attendance)
+            send_pickup_notification(student, attendance)
         elif action == 'dropoff':
             send_dropoff_notification(student, attendance)
         elif action == 'absent':
@@ -1781,7 +1781,7 @@ def send_dropoff_notification(student, attendance):
     Bus: {student.bus.registration}
     """
 
-    Notificatio.objects.create(
+    Notification.objects.create(
         recipient = parent.user,
         notification_type = 'attendance',
         delivery_method = 'app',
@@ -1808,13 +1808,13 @@ def send_absent_notification(student, attendance):
         recipient = parent.user,
         notification_type = 'attendance',
         delivery_method = 'app',
-        subject = f'{student.name} Absent Today'
+        subject = f'{student.name} Absent Today',
         message = message,
         is_automatic = True
     )
 
 
-def send_late_notification(student, notification):
+def send_late_notification(student, attendance):
     """ Send notification to parent when student is late """
     parent = student.parent
     if not parent:
@@ -1836,4 +1836,11 @@ def send_late_notification(student, notification):
         is_automatic = True
     )
 
-    
+
+@login_required
+def parent_list(request):
+    """
+    Display all parents with their children.
+    Handles adding new parents.
+    """
+    pass
