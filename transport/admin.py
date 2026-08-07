@@ -23,3 +23,26 @@ class CustomUserAdmin(UserAdmin):
     )
 
 admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(Attendance)
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = ('student', 'date', 'status', 'pickup_time', 'dropoff_time', 'bus')
+    list_filter = ('status', 'date', 'bus')
+    search_fields = ('student__name', 'bus__registration')
+    readonly_fields = ('recorded_at', 'updated_at')
+    fieldsets = (
+        ('Student Information', {
+            'fields': ('student', 'bus', 'assistant')
+        }),
+        ('Status Details', {
+            'fields': ('status', 'pickup_time', 'dropoff_time', 'notes')
+        }),
+        ('Audit Information', {
+            'fields': ('recorded_at', 'updated_at', 'recorded_by', 'last_modified_by'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('student', 'bus', 'assistant')

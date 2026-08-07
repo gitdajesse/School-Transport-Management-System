@@ -1741,3 +1741,99 @@ def edit_attendance(request, attendance_id):
     }
 
     return render(request, 'transport/edit_attendance.html', context)
+
+
+def send_pickup_notification(student, attendance):
+    """ Send notification to parent when student is picked up """
+    parent = student.parent
+    if not parent:
+        return
+
+    message = f"""
+    {student.name} has been picked up!
+
+    Time: {attendance.pickup_time.strftime('%I:%M %p')}
+    Bus: {student.bus.registration}
+    Route: {student.bus.route_name}
+    """
+
+    # Send in-app notification
+    Notification.objects.create(
+        recipient = parent.user,
+        notification_type = 'attendance',
+        delivery_method = 'app',
+        subject = f'{student.name} Picked up',
+        message = message,
+        is_automatic = True
+    )
+
+
+def send_dropoff_notification(student, attendance):
+    """ Send notification to parent when student is dropped off """
+    parent = student.parent
+    if not parent:
+        return
+
+    message = f"""
+    {student.name} has arrived at school!
+
+    Time: {attendance.dropoff_time.strftime('%I:%M %p')}
+    Bus: {student.bus.registration}
+    """
+
+    Notificatio.objects.create(
+        recipient = parent.user,
+        notification_type = 'attendance',
+        delivery_method = 'app',
+        subject = f'{student.name} Arrived at School',
+        message = message,
+        is_automatic = True
+    )
+
+
+def send_absent_notification(student, attendance):
+    """ Send notification to parent when student is absent """
+    parent = student.parent
+    if not parent:
+        return
+
+    message = f"""
+    {student.name} was marked absent today.
+
+    Date: {attendance.date}
+    Please contact the school for more information.
+    """
+
+    Notification.objects.create(
+        recipient = parent.user,
+        notification_type = 'attendance',
+        delivery_method = 'app',
+        subject = f'{student.name} Absent Today'
+        message = message,
+        is_automatic = True
+    )
+
+
+def send_late_notification(student, notification):
+    """ Send notification to parent when student is late """
+    parent = student.parent
+    if not parent:
+        return
+
+    message = f"""
+    {student.name} was late today.
+
+    Time: {attendance.pickup_time.strftime('%I:%M %p')}
+    Please ensure your child is ready earlier tomorrow.
+    """
+
+    Notification.objects.create(
+        recipient = parent.user,
+        notification_type = 'attendance',
+        delivery_method = 'app',
+        subject = f'{student.name} Late Today',
+        message = message,
+        is_automatic = True
+    )
+
+    
