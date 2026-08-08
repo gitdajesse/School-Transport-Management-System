@@ -1937,3 +1937,44 @@ def parent_list(request):
 
     else:
         return render(request, 'transport/parent_list.html', context)
+
+
+@login_required
+def parent_detail(request, parent_id):
+    """
+    View detailed information about a specific parent.
+    """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can view parent details.')
+        return redirect('index')
+
+    parent = get_object_or_404(Parent, id = parent_id)
+    children = parent.children.filter(is_active = True).order_by('name')
+
+    # Get statistics
+    child_count = children.count()
+    active_children = children.filter(is_active = True).count()
+
+    # Get attendance stats for children
+    for child in children:
+        today_records = Attendance.objects.filter(
+            student=child,
+            date=timezone.now().date()
+        )
+
+        child.today_status = (
+            today_records.first().status
+            if today_records.exists()
+            else 'pending'
+        )
+
+        child.total_records = child.attendance_records.count()
+
+    context = {
+        'parent': parent,
+        'children': children,
+        'child_count': child_count,
+        'active_children': active_children
+    }
+
+    return render(request, 'transport/parent_detail.html', context)
