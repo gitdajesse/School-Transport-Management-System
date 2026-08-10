@@ -1978,3 +1978,76 @@ def parent_detail(request, parent_id):
     }
 
     return render(request, 'transport/parent_detail.html', context)
+
+
+@login_required
+def edit_parent(request, parent_id):
+    """ Edit an existing parent's information """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. ONly admins can edit parents.')
+        return redirect('index')
+
+    parent = get_object_or_404(Parent, id = parent_id)
+    user = parent.user
+
+    if request.method == 'POST':
+        # Get form data
+        full_name = request.POST.get('full_name')
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        phone_number = request.POST.get('phone_number')
+        home_address = request.POST.get('home_address')
+        is_active = request.POST.get('is_active')
+
+        # Validation
+        if not full_name:
+            messages.error(request, 'The full name is required.')
+            return render(request, 'transport/edit_parent.html', {'parent': parent})
+        if not username:
+            messages.error(request, 'The username is required.')
+            return render(request, 'transport/edit_parent.html', {'parent': parent})
+        if not email:
+            messages.error(request, 'The email is required.')
+            return render(request, 'transport/edit_parent.html', {'parent': parent})
+        if not phone_number:
+            messages.error(request, 'The phone number is required.')
+            return render(request, 'transport/edit_parent.html', {'parent': parent})
+        if not home_address:
+            messages.error(request, 'The home address is required.')
+            return render(request, 'transport/edit_parent.html', {'parent': parent})
+
+        try:
+            # Update user
+            if user.username != username:
+                # Check if new username is taken
+                if User.objects.filter(username = username).exclude(id = user.id).exists():
+                    messages.error(request, f'Username "{username}" already exists.')
+                    return redirect(request, 'transport/edit_parent.html', {'parent': parent})
+                user.username = username
+
+            user.email = email
+            user.phone_number = phone_number
+            user.is_active = is_active
+            user.save()
+
+            # Update parent profile
+            parent.name = full_name
+            parent.email = email
+            parent.phone_number = phone_number
+            parent.home_address = home_address
+            parent.save()
+
+            messages.success(request, f'Parent "{full_name}" updated successfully!')
+            return redirect('parent_list')
+
+        except Exception as e:
+            messages.error(request, f'Error updating parent: {str(e)}')
+            return render(request, 'transport/edit_parent.html', {'parent': parent})
+
+    else:
+        context = {
+            'parent': parent,
+            'user': user
+        }
+
+        return render(request, 'transport/edit_parent.html', context)

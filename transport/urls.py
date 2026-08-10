@@ -59,4 +59,5 @@ urlpatterns = [
     # Parent Management URLs
     path('parents/', views.parent_list, name  = 'parent_list'),
     path('parents/detail/<int:parent_id>/', views.parent_detail, name = 'parent_detail'),
+    path('parents/edit/<int:parent_id>/', views.edit_parent, name = 'edit_parent'),
 ]

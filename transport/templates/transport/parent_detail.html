@@ -11,7 +11,7 @@
             <a href="{% url 'parent_list' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Parents
             </a>
-            <a href="#" class="btn btn-primary">
+            <a href="{% url 'edit_parent' parent.id %}" class="btn btn-primary">
                 <i class="bi bi-pencil"></i> Edit Parent
             </a>
         </div>
@@ -74,7 +74,7 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="#" class="btn btn-outline-primary">
+                        <a href="{% url 'edit_parent' parent.id %}" class="btn btn-outline-primary">
                             <i class="bi bi-pencil"></i> Edit Parent
                         </a>
                         {% if parent.user.is_active %}
