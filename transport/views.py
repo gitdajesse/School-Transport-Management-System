@@ -2051,3 +2051,60 @@ def edit_parent(request, parent_id):
         }
 
         return render(request, 'transport/edit_parent.html', context)
+
+
+@login_required
+def deactivate_parent(request, parent_id):
+    """ Deactivate a parent """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. only admins can deactivate parents.')
+        return redirect('index')
+
+    parent = get_object_or_404(Parent, id = parent_id)
+    user = parent.user
+
+    # Check if parent has active children
+    active_children = parent.children.filter(is_active = True)
+
+    if request.method == 'POST':
+        if active_children.exists():
+            messages.warning(request, f'Parent "{parent.name}" has {active_children.count()} active children. ''Please reassign or deactivate children first.')
+            return redirect('parent_list')
+
+        user.is_active = False
+        user.save()
+
+        messages.success(request, f'Parent "{parent.name}" has been deactivated.')
+        return redirect('parent_list')
+    else:
+        context = {
+            'parent': parent,
+            'active_children': active_children,
+            'child_count': active_children.count()
+        }
+
+        return render(request, 'transport/confirm_deactivate_parent.html', context)
+
+
+@login_required
+def reactivate_parent(request, parent_id):
+    """ Reactivate a deactivated parent """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can reactivate parents.')
+        return redirect('index')
+
+    parent = get_object_or_404(Parent, id = parent_id)
+    user = parent.user
+
+    if request.method == 'POST':
+        user.is_active = True
+        user.save()
+
+        messages.success(request, f'Parent "{parent.name}" has been reactivated.')
+        return redirect('parent_list')
+    else:
+        context = {
+            'parent': parent
+        }
+
+        return render(request, 'transport/confirm_reactivate_parent.html', context)

@@ -78,11 +78,11 @@
                             <i class="bi bi-pencil"></i> Edit Parent
                         </a>
                         {% if parent.user.is_active %}
-                            <a href="#" class="btn btn-outline-danger">
+                            <a href="{% url 'deactivate_parent' parent.id %}" class="btn btn-outline-danger">
                                 <i class="bi bi-x-circle"></i> Deactivate Parent
                             </a>
                         {% else %}
-                            <a href="#" class="btn btn-outline-success">
+                            <a href="{% url 'reactivate_parent' parent.id %}" class="btn btn-outline-success">
                                 <i class="bi bi-check-circle"></i> Reactivate Parent
                             </a>
                         {% endif %}
@@ -159,7 +159,7 @@
                         <div class="text-center py-4">
                             <i class="bi bi-people display-4 text-muted"></i>
                             <p class="text-muted mt-2">No children registered for this parent.</p>
-                            <a href="{% url 'add_student' %}" class="btn btn-sm btn-primary">
+                            <a href="{% url 'student_list' %}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-person-plus"></i> Add Child
                             </a>
                         </div>

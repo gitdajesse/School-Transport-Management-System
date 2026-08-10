@@ -184,13 +184,13 @@
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             {% if parent.user.is_active %}
-                                                <a href="#"
+                                                <a href="{% url 'deactivate_parent' parent.id %}"
                                                    class="btn btn-sm btn-outline-danger"
                                                    title="Deactivate Parent">
                                                     <i class="bi bi-x-circle"></i>
                                                 </a>
                                             {% else %}
-                                                <a href="#"
+                                                <a href="{% url 'reactivate_parent' parent.id %}"
                                                    class="btn btn-sm btn-outline-success"
                                                    title="Reactivate Parent">
                                                     <i class="bi bi-check-circle"></i>

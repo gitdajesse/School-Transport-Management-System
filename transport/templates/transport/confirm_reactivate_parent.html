@@ -1,0 +1,53 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Confirm Reactivate Parent{% endblock %}
+
+{% block body %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card card-shadow border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle"></i> Confirm Reactivation
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-1 text-success mb-3">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+
+                    <h4>Reactivate this parent?</h4>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Parent Details:</strong>
+                        <br>
+                        <strong>Name:</strong> {{ parent.name }}
+                        <br>
+                        <strong>Email:</strong> {{ parent.email }}
+                        <br>
+                        <strong>Phone:</strong> {{ parent.phone_number }}
+                    </div>
+
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle"></i>
+                        This parent will reappear in active lists.
+                        Their children will also become active again.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'parent_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <form method="POST" action="{% url 'reactivate_parent' parent.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Yes, Reactivate
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
