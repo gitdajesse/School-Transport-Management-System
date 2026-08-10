@@ -207,12 +207,14 @@ def manage_system(request):
     total_students = Student.objects.count()
     total_routes = Route.objects.count()
     total_parents = Parent.objects.count()
+    total_assistants = Assistant.objects.count()
 
     context = {
         'total_buses': total_buses,
         'total_students': total_students,
         'total_routes': total_routes,
-        'total_parents': total_parents
+        'total_parents': total_parents,
+        'total_assistants': total_assistants
     }
 
     return render(request, 'transport/manage_system.html', context)
