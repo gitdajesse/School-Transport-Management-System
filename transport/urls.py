@@ -57,9 +57,12 @@ urlpatterns = [
     path('attendance/edit/<int:attendance_id>/', views.edit_attendance, name = 'edit_attendance'),
 
     # Parent Management URLs
-    path('parents/', views.parent_list, name  = 'parent_list'),
+    path('parents/', views.parent_list, name = 'parent_list'),
     path('parents/detail/<int:parent_id>/', views.parent_detail, name = 'parent_detail'),
     path('parents/edit/<int:parent_id>/', views.edit_parent, name = 'edit_parent'),
     path('parents/deactivate/<int:parent_id>/', views.deactivate_parent, name = 'deactivate_parent'),
     path('parents/reactivate/<int:parent_id>/', views.reactivate_parent, name = 'reactivate_parent'),
+
+    # Assistant Management URLs
+    path('assistants/', views.assistant_list, name = 'assistant_list'),
 ]

@@ -2110,3 +2110,112 @@ def reactivate_parent(request, parent_id):
         }
 
         return render(request, 'transport/confirm_reactivate_parent.html', context)
+
+
+@login_required
+def assistant_list(request):
+    """
+    Display all assistants with their bus assignments and student.
+    Handles adding new assistants.
+    """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can manage assistants.')
+        return redirect('index')
+
+    # Get all assistants with student count on their bus
+    assistants = Assistant.objects.all().annotate(student_count = Count('bus__students', filter = Q(bus__students__is_active = True))).order_by('name')
+
+    # Calculate statistics
+    total_assistants = assistants.count()
+    active_assistants = assistants.filter(is_active = True).count()
+    inactive_assistants = assistants.filter(is_active = False).count()
+    assigned_assistants = assistants.filter(bus__isnull = False).count()
+    unassigned_assistants = assistants.filter(bus__isnull = True).count()
+
+    # Get all buses from dropdown
+    buses = Bus.objects.filter(is_active = True)
+
+    context = {
+        'assistants': assistants,
+        'total_assistants': total_assistants,
+        'active_assistants': active_assistants,
+        'inactive_assistants': inactive_assistants,
+        'assigned_assistants': assigned_assistants,
+        'unassigned_assistants': unassigned_assistants,
+        'buses': buses
+    }
+
+    # Handle POST request
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name')
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        phone_number = request.POST.get('phone_number')
+        bus_id = request.POST.get('bus')
+        password = request.POST.get('password')
+        confirm_password = request.POST.get('confirm_password')
+
+        # Validation
+        if not full_name:
+            messages.error(request, 'The full name is required.')
+            return render(request, 'transport/assistant_list.html', context)
+        if not username:
+            messages.error(request, 'The username is required.')
+            return render(request, 'transport/assistant_list.html', context)
+        if not email:
+            messages.error(request, 'The email is required.')
+            return render(request, 'transport/assistant_list.html', context)
+        if not phone_number:
+            messages.error(request, 'The phone_number is required.')
+            return render(request, 'transport/assistant_list.html', context)
+        if not password:
+            messages.error(request, 'The password is required.')
+            return render(request, 'transport/assistant_list.html', context)
+        if not confirm_password:
+            messages.error(request, 'Please confirm your password.')
+            return render(request, 'transport/assistant_list.html', context)
+
+        if password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+            return render(request, 'transport/assistant_list.html', context)
+
+        try:
+            # Create user
+            user = User.objects.create_user(
+                username = username,
+                email = email,
+                password = password
+            )
+            user.user_type = 'assistant'
+            user.phone_number = phone_number
+            user.is_active = True
+            user.save()
+
+            # Get bus is selected
+            bus_obj = None
+            if bus_id:
+                try:
+                    bus_obj = Bus.objects.get(id = bus_id)
+                except Bus.DoesNotExist:
+                    messages.warning(request, 'Selected bus not found. Assistant created without bus assignment.')
+
+            # Create assistant profile
+            assistant = Assistant.objects.create(
+                user = user,
+                name = full_name,
+                phone_number = phone_number,
+                email = email,
+                bus = bus_obj,
+                is_active = True
+            )
+
+            messages.success(request, f'Assistant "{full_name}" added successfully!')
+            return redirect('assistant_list')
+        except IntegrityError:
+            messages.error(request, f'Username "{username}" already exists.')
+            return render(request, 'transport/assistant_list.html', context)
+        except Exception as e:
+            messages.error(request, f'Error adding assistant: {str(e)}')
+            return render(request, 'transport/assistant_list.html', context)
+    else:
+        return render(request, 'transport/assistant_list.html', context)
