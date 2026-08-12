@@ -2219,3 +2219,35 @@ def assistant_list(request):
             return render(request, 'transport/assistant_list.html', context)
     else:
         return render(request, 'transport/assistant_list.html', context)
+
+
+@login_required
+def assistant_detail(request, assistant_id):
+    """
+    View detailed information about a specific assistant.
+    """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Acess denied. Only admins can view assistant details')
+        return redirect('index')
+
+    assistant = get_object_or_404(Assistant, id = assistant_id)
+
+    # Get students on assistant's bus
+    students_on_bus = []
+
+    if assistant.bus:
+        students_on_bus = Student.objects.filter(bus = assistant.bus, is_active = True).order_by('name')
+
+    # Get attendance stats
+    today = timezone.now().date()
+    today_attendance = Attendance.objects.filter(assistant = assistant, date = today) if assistant else None
+
+    context = {
+        'assistant': assistant,
+        'students_on_bus': students_on_bus,
+        'student_count': len(students_on_bus),
+        'today_attendance': today_attendance,
+        'has_bus': assistant.bus is not None
+    }
+
+    return render(request, 'transport/assistant_detail.html', context)

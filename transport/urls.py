@@ -65,4 +65,5 @@ urlpatterns = [
 
     # Assistant Management URLs
     path('assistants/', views.assistant_list, name = 'assistant_list'),
+    path('assistants/details/<int:assistant_id>', views.assistant_detail, name = 'assistant_detail'),
 ]
