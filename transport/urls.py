@@ -66,4 +66,8 @@ urlpatterns = [
     # Assistant Management URLs
     path('assistants/', views.assistant_list, name = 'assistant_list'),
     path('assistants/details/<int:assistant_id>', views.assistant_detail, name = 'assistant_detail'),
+    path('assistants/edit/<int:assistant_id>', views.edit_assistant, name = 'edit_assistant'),
+    path('assistants/deactivate/<int:assistant_id>', views.deactivate_assistant, name = 'deactivate_assistant'),
+    path('assistants/reactivate/<int:assistant_id>', views.reactivate_assistant, name = 'reactivate_assistant'),
 ]
+
