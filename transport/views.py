@@ -23,6 +23,10 @@ def register(request):
     if request.user.is_authenticated:
         return redirect('index')
 
+    context = {
+        'form_data': request.POST
+    }
+
     if request.method == 'POST':
         # Get form data
         user_type = request.POST.get('user_type')
@@ -37,43 +41,43 @@ def register(request):
         # Validation
         if not user_type or user_type not in ['admin', 'parent', 'assistant']:
             messages.error(request, 'Please select a valid user type')
-            return render(request, 'transport/register.html')
+            return render(request, 'transport/register.html', context)
 
         if not username:
             messages.error(request, 'Please fill in your username')
-            return render(request, 'transport/register.html')
+            return render(request, 'transport/register.html', context)
 
         if not full_name:
             messages.error(request, 'Please fill in your full name')
-            return render(request, 'transport/register.html')
+            return render(request, 'transport/register.html', context)
 
         if not password:
             messages.error(request, 'Please fill in your password')
-            return render(request, 'transport/register.html')
+            return render(request, 'transport/register.html', context)
 
         if not confirm_password:
             messages.error(request, 'Please confirm your password')
-            return render(request, 'transport/register.html')
+            return render(request, 'transport/register.html', context)
 
         if password != confirm_password:
             messages.error(request, 'Passwords do not match')
-            return render(request, 'transport/register.html')
+            return render(request, 'transport/register.html', context)
 
         # Conditional validation based on user type
         if user_type == 'parent':
             if not email:
                 messages.error(request, 'Please fill in your email')
-                return render(request, 'transport/register.html')
+                return render(request, 'transport/register.html', context)
             if not phone_number:
                 messages.error(request, 'Please fill in your phone number')
-                return render(request, 'transport/register.html')
+                return render(request, 'transport/register.html', context)
             if not home_address:
                 messages.error(request, 'Please fill in your home address')
-                return render(request, 'transport/register.html')
+                return render(request, 'transport/register.html', context)
         elif user_type == 'assistant':
             if not phone_number:
                 messages.error(request, 'Please fill in your phone number')
-                return render(request, 'transport/register.html')
+                return render(request, 'transport/register.html', context)
 
         try:
             # Create user
@@ -124,7 +128,7 @@ def register(request):
             return render(request, 'transport/register.html')
 
     # Get request
-    return render (request, 'transport/register.html')
+    return render(request, 'transport/register.html')
 
 def login_view(request):
     """ Handles user login """
@@ -2251,3 +2255,172 @@ def assistant_detail(request, assistant_id):
     }
 
     return render(request, 'transport/assistant_detail.html', context)
+
+
+@login_required
+def edit_assistant(request, assistant_id):
+    """
+    Edit an existing assistant's information
+    """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can edit assistants.')
+        return redirect('index')
+
+    assistant = get_object_or_404(Assistant, id = assistant_id)
+    user = assistant.user
+
+    # Get all active buses for dropdown
+    buses = Bus.objects.filter(is_active = True)
+
+    if request.method == 'POST':
+        full_name = request.POST.get('full_name')
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        phone_number = request.POST.get('phone_number')
+        bus_id = request.POST.get('bus')
+        is_active = request.POST.get('is_active')
+
+        # Validation
+        if not full_name:
+            messages.error(request, 'The full name is required.')
+            return render(request, 'transport/edit_assistant.html', {
+                'assistant': assistant,
+                'buses': buses,
+            })
+        if not username:
+            messages.error(request, 'The username is required.')
+            return render(request, 'transport/edit_assistant.html', {
+                'assistant': assistant,
+                'buses': buses,
+            })
+        if not email:
+            messages.error(request, 'The email is required.')
+            return render(request, 'transport/edit_assistant.html', {
+                'assistant': assistant,
+                'buses': buses,
+            })
+        if not phone_number:
+            messages.error(request, 'The phone number is required.')
+            return render(request, 'transport/edit_assistant.html', {
+                'assistant': assistant,
+                'buses': buses,
+            })
+
+        try:
+            # Update user
+            if user.username != username:
+                # Check if new username is taken
+                if User.objects.filter(username = username).exclude(id = user.id).exists():
+                    messages.error(request, f'Username "{username}" already exists.')
+                    return render(request, 'transport/edit_assistant.html', {
+                        'assistant': assistant,
+                        'buses': buses
+                    })
+                user.username = username
+
+            user.email = email
+            user.phone_number = phone_number
+            user.is_active = is_active
+            user.save()
+
+            # Update bus
+            bus_obj = None
+            if bus_id:
+                try:
+                    bus_obj = Bus.objects.get(id = bus_id)
+                except Bus.DoesNotExist:
+                    messages.warning(request, 'Selected bus not found.')
+
+            # Update assistant profile
+            assistant.name = full_name
+            assistant.email = email
+            assistant.phone_number= phone_number
+            assistant.bus = bus_obj
+            assistant.is_active = is_active
+            assistant.save()
+
+            messages.success(request, f'Assistant "{full_name}" udpated successfully!')
+            return redirect('assistant_list')
+
+        except Exception as e:
+            messages.error(request, f'Error updating assistant: {str(e)}')
+            return render(request, 'transport/edit_assistant.html', {
+                'assistant': assistant,
+                'buses': buses
+            })
+    else:
+        context = {
+            'assistant': assistant,
+            'user': user,
+            'buses': buses
+        }
+
+        return render(request, 'transport/edit_assistant.html', context)
+
+
+@login_required
+def deactivate_assistant(request, assistant_id):
+    """
+    Deactivate an assistant
+    """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can deactivate assistants.')
+        return redirect('index')
+
+    assistant = get_object_or_404(Assistant, id = assistant_id)
+    user = assistant.user
+
+    # Check if assistant has students on their bus
+    students_on_bus = []
+
+    if assistant.bus:
+        students_on_bus = Student.objects.filter(bus = assistant.bus, is_active = True)
+
+    if request.method == 'POST':
+        if students_on_bus:
+            messages.warning(request, f'Assistant "{assistant.name}" has {students_on_bus.count()} students on their bus. ''Please reassign students first.')
+            return redirect('assistant_list')
+
+        user.is_active = False
+        user.save()
+
+        assistant.is_active = False
+        assistant.save()
+
+        messages.success(request, f'Assistant "{assistant.name}" has been deactivated.')
+        return redirect('assistant_list')
+
+    context = {
+        'assistant': assistant,
+        'students_on_bus': students_on_bus,
+        'student_count': len(students_on_bus)
+    }
+
+    return render(request, 'transport/confirm_deactivate_assistant.html', context)
+
+
+@login_required
+def reactivate_assistant(request, assistant_id):
+    """ Reactivate a deactivated assistant """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can reactivate assistants.')
+        return redirect('index')
+
+    assistant = get_object_or_404(Assistant, id = assistant_id)
+    user = assistant.user
+
+    if request.method == 'POST':
+        user.is_active = True
+        user.save()
+
+        assistant.is_active = True
+        assistant.save()
+
+        messages.success(request, f'Assistant "{assistant.name}" has been reactivated.')
+        return redirect('assistant_list')
+
+    context = {
+        'assistant': assistant
+    }
+
+    return render(request, 'transport/confirm_reactivate_assistant.html', context)
