@@ -663,7 +663,7 @@ def deactivate_bus(request, bus_id):
     students = Student.objects.filter(bus = bus, is_active = True)
 
     if students.exists():
-        messages.warning(request, f'Bus "{bus.registration}" has {students.count()} students assigned.' 'Please reassign students before deactivating.')
+        messages.warning(request, f'Bus "{bus.registration}" has {students.count()} students assigned. ' 'Please reassign students before deactivating.')
         return redirect('bus_list')
 
     if request.method == 'POST':
@@ -783,7 +783,7 @@ def route_list(request):
                 is_active = True
             )
             messages.success(request, f'Route "{name}" created successfully!')
-            return redirect('roue_list')
+            return redirect('route_list')
         except Exception as e:
             messages.error(request, f'Error creating route: {str(e)}')
             return render(request, 'transport/route_list.html', context)
