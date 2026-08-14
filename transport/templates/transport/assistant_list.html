@@ -193,19 +193,19 @@
                                                title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="#"
+                                            <a href="{% url 'edit_assistant' assistant.id %}"
                                                class="btn btn-sm btn-outline-primary"
                                                title="Edit Assistant">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             {% if assistant.is_active %}
-                                                <a href="#"
+                                                <a href="{% url 'deactivate_assistant' assistant.id %}"
                                                    class="btn btn-sm btn-outline-danger"
                                                    title="Deactivate Assistant">
                                                     <i class="bi bi-x-circle"></i>
                                                 </a>
                                             {% else %}
-                                                <a href="#"
+                                                <a href="{% url 'reactivate_assistant' assistant.id %}"
                                                    class="btn btn-sm btn-outline-success"
                                                    title="Reactivate Assistant">
                                                     <i class="bi bi-check-circle"></i>

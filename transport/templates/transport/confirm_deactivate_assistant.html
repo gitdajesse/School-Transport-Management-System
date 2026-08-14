@@ -1,0 +1,69 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Confirm Deactivate Assistant{% endblock %}
+
+{% block body %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card card-shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirm Deactivation
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-1 text-danger mb-3">
+                        <i class="bi bi-person-x"></i>
+                    </div>
+
+                    <h4>Are you sure you want to deactivate this assistant?</h4>
+
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Assistant Details:</strong>
+                        <br>
+                        <strong>Name:</strong> {{ assistant.name }}
+                        <br>
+                        <strong>Email:</strong> {{ assistant.email }}
+                        <br>
+                        <strong>Phone:</strong> {{ assistant.phone_number }}
+                        <br>
+                        <strong>Bus:</strong> {{ assistant.bus.registration|default:"Not Assigned" }}
+                        <br>
+                        <strong>Students on Bus:</strong> {{ student_count }}
+                    </div>
+
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong>
+                        {% if student_count > 0 %}
+                            This assistant has {{ student_count }} students on their bus.
+                            Please reassign students first.
+                        {% else %}
+                            This assistant will be removed from active lists.
+                            This action can be undone.
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'assistant_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        {% if student_count == 0 %}
+                            <form method="POST" action="{% url 'deactivate_assistant' assistant.id %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-check-circle"></i> Yes, Deactivate
+                                </button>
+                            </form>
+                        {% else %}
+                            <a href="{% url 'assistant_detail' assistant.id %}" class="btn btn-warning">
+                                <i class="bi bi-people"></i> View Students
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
