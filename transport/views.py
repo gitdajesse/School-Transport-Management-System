@@ -410,8 +410,8 @@ def edit_student(request, student_id):
                 messages.error(request, 'Parent not found.')
 
         # Update active status
-        is_active = request.POST.get('is_active')
-        student.is_active = is_active == 'on'
+        is_active = request.POST.get('is_active') == 'on'
+        student.is_active = is_active
 
         student.save()
         messages.success(request, f'Student "{ student.name }" updated successfully!')
@@ -594,7 +594,7 @@ def edit_bus(request, bus_id):
         driver_name = request.POST.get('driver_name')
         capacity = request.POST.get('capacity')
         route_name = request.POST.get('route_name')
-        is_active = request.POST.get('is_active')
+        is_active = request.POST.get('is_active') == 'on'
 
         # Validatiion
         if not registration:
@@ -1911,7 +1911,7 @@ def parent_list(request):
 
         try:
             # Create user
-            user = User.object.create(
+            user = User.objects.create_user(
                 username = username,
                 email = email,
                 password = password
@@ -2003,7 +2003,7 @@ def edit_parent(request, parent_id):
         email = request.POST.get('email')
         phone_number = request.POST.get('phone_number')
         home_address = request.POST.get('home_address')
-        is_active = request.POST.get('is_active')
+        is_active = request.POST.get('is_active') == 'on'
 
         # Validation
         if not full_name:
@@ -2278,7 +2278,7 @@ def edit_assistant(request, assistant_id):
         email = request.POST.get('email')
         phone_number = request.POST.get('phone_number')
         bus_id = request.POST.get('bus')
-        is_active = request.POST.get('is_active')
+        is_active = request.POST.get('is_active') == 'on'
 
         # Validation
         if not full_name:
