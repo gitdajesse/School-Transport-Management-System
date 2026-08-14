@@ -941,27 +941,27 @@ def add_stop(request, route_id):
         # Validation
         if not name:
             messages.error(request, 'Please enter the stop name.')
-            return redirect('route_detail', route_id = route_id)
+            return redirect('route_detail', route_id = route.id)
         if not address:
             messages.error(request, 'Please enter the stop address.')
-            return redirect('route_detail', route_id = route_id)
+            return redirect('route_detail', route_id = route.id)
         if not order:
             messages.error(request, 'Please enter the stop order.')
-            return redirect('route_detail', route_id = route_id)
+            return redirect('route_detail', route_id = route.id)
 
         try:
             order = int(order)
             if order < 1:
                 messages.error(request, 'Order must be a positive number.')
-                return redirect('route_detail', route_id = route_id)
+                return redirect('route_detail', route_id = route.id)
         except ValueError:
             messages.error(request, 'Order must be a number.')
-            return redirect('route_detail', route_id = route_id)
+            return redirect('route_detail', route_id = route.id)
 
         # Check if order already exists for this route
         if Stop.objects.filter(route = route, order = order).exists():
             messages.error(request, f'Stop order {order} already exists for this route.')
-            return redirect('route_detail', route_id = route_id)
+            return redirect('route_detail', route_id = route.id)
 
         try:
             stop = Stop.objects.create(
@@ -977,9 +977,10 @@ def add_stop(request, route_id):
             messages.success(request, f'Stop "{name}" added to route "{route.name}" !')
         except Exception as e:
             messages.error(request, f'Error adding stop: {str(e)}')
-            return redirect('route_detail', route_id = route_id)
+        return redirect('route_detail', route_id = route.id)
     else:
-        return redirect('route_detail', route_id = route_id)
+        messages.info(request, 'Please use the form on the route detail page to add stops.')
+        return redirect('route_detail', route_id = route.id)
 
 
 @login_required
@@ -1029,27 +1030,27 @@ def edit_stop(request, stop_id):
             stop.name = name
             stop.order = order
             stop.address = address
-            stop.pickup_time = pickup_time or None
-            stop.dropoff_time = dropoff_time or None
+            stop.pickup_time = pickup_time if pickup_time else None
+            stop.dropoff_time = dropoff_time if dropoff_time else None
             stop.is_active = is_active
             stop.save()
 
             messages.success(request, f'Stop "{name}" updated successfully!')
         except Exception as e:
             messages.error(request, f'Error updating stop: {str(e)}')
-            return redirect('route_detail', route_id = route.id)
+        return redirect('route_detail', route_id = route.id)
     else:
         context = {
             'stop': stop,
             'route': route
         }
 
-        return redirect(request, 'transport/edit_stop.html', context)
+        return render(request, 'transport/edit_stop.html', context)
 
 
 @login_required
 def delete_stop(request, stop_id):
-    """ Delete a stop  """
+    """ Delete a stop """
     if request.user.user_type != 'admin':
         messages.error(request, 'Access denied. ONly admins can delete stops.')
         return redirect('index')
@@ -1058,8 +1059,9 @@ def delete_stop(request, stop_id):
     route = stop.route
 
     if request.method == 'POST':
+        stop_name = stop.name
         stop.delete()
-        messages.success(request, f'Stop "{stop.name}" has been removed.')
+        messages.success(request, f'Stop "{stop.name}" has been removed from route "{route.name}". ')
         return redirect('route_detail', route_id = route.id)
 
     else:
@@ -1068,7 +1070,7 @@ def delete_stop(request, stop_id):
             'route': route
         }
 
-        return render(request, 'trasnport/confirm_delete_stop.html', context)
+        return render(request, 'transport/confirm_delete_stop.html', context)
 
 
 def send_notification(recipient, notification_type, subject, message, delivery_method = 'app'):
