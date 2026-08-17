@@ -391,7 +391,7 @@ def edit_student(request, student_id):
         bus_registration = request.POST.get('bus')
         if bus_registration:
             try:
-                new_bus = Bus.objects.get(registartion = bus_registration)
+                new_bus = Bus.objects.get(registration = bus_registration)
 
                 # If bus changed, notify parent
                 if old_bus != new_bus:
