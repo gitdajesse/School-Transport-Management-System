@@ -369,6 +369,39 @@ def student_list(request):
 
 
 @login_required
+def student_detail(request, student_id):
+    """ View detailed information about a specific person """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can edit students.')
+        return redirect('index')
+
+    student = get_object_or_404(Student, id = student_id)
+
+    # Get today's attendance
+    today = timezone.now().date()
+    today_attendance = Attendance.objects.filter(student = student, date = today).first()
+
+    # Get attendance history (last 30 records)
+    attendance_records = Attendance.objects.filter(student = student).order_by('-date')[:30]
+
+    # Calculate statistics
+    total_records = Attendance.objects.filter(student = student).count()
+    present_count = Attendance.objects.filter(student = student, status__in = ['picked_up', 'dropped_off']).count()
+    absent_count = Attendance.objects.filter(student = student, status = 'absent').count()
+
+    context = {
+        'student': student,
+        'today': today,
+        'today_attendance': today_attendance,
+        'attendance_records': attendance_records,
+        'total_records': total_records,
+        'present_count': present_count,
+        'absent_count': absent_count
+    }
+
+    return render(request, 'transport/student_detail.html', context)
+
+@login_required
 def edit_student(request, student_id):
     """ Edit a student's information """
     if request.user.user_type != 'admin':

@@ -485,7 +485,7 @@
                                         <div class='d-flex align-items-center gap-2'>
 
                                             <div class='rounded-circle bg-primary text-white d-flex align-items-center justify-content-center'
-                                            style='width:36px;height:36px;'>
+                                                 style='width:36px;height:36px;'>
 
                                                 <i class='bi bi-person-fill'></i>
 
@@ -555,9 +555,16 @@
 
                                         <div class='btn-group'>
 
+                                            <a href = "{% url 'student_detail' student.id %}"
+                                            class = "btn btn-sm btn-outline-info"
+                                            title = "View Details"
+                                            >
+                                                <i class = "bi bi-eye"></i>
+                                            </a>
+
                                             <a href='{% url "edit_student" student.id %}'
-                                            class='btn btn-sm btn-outline-primary'
-                                            title='Edit Student'>
+                                               class='btn btn-sm btn-outline-primary'
+                                               title='Edit Student'>
 
                                                 <i class='bi bi-pencil'></i>
 
@@ -566,8 +573,8 @@
                                             {% if student.is_active %}
 
                                                 <a href='{% url "deactivate_student" student.id %}'
-                                                class='btn btn-sm btn-outline-danger'
-                                                title='Deactivate Student'>
+                                                   class='btn btn-sm btn-outline-danger'
+                                                   title='Deactivate Student'>
 
                                                     <i class='bi bi-x-circle'></i>
 
@@ -576,8 +583,8 @@
                                             {% else %}
 
                                                 <a href='{% url "reactivate_student" student.id %}'
-                                                class='btn btn-sm btn-outline-success'
-                                                title='Reactivate Student'>
+                                                   class='btn btn-sm btn-outline-success'
+                                                   title='Reactivate Student'>
 
                                                     <i class='bi bi-check-circle'></i>
 
@@ -623,11 +630,8 @@
 
     <!-- Quick Actions -->
     <div class='mt-4'>
-
         <div class='card shadow-sm border-0'>
-
             <div class='card-body d-flex gap-2 flex-wrap'>
-
                 <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-speedometer2"></i>
                     Dashboard
@@ -636,13 +640,9 @@
                     <i class="bi bi-grid-3x3-gap-fill"></i>
                     Management Hub
                 </a>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
 
 {% endblock %}

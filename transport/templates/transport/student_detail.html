@@ -1,0 +1,381 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Student Details - {{ student.name }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-person-fill"></i> Student Details
+        </h1>
+        <div>
+            <a href="{% url 'student_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Students
+            </a>
+            <a href="{% url 'edit_student' student.id %}" class="btn btn-primary">
+                <i class="bi bi-pencil"></i> Edit Student
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Student Information -->
+        <div class="col-lg-4 mb-4">
+            <div class="card card-shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Student Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Name:</dt>
+                        <dd class="col-sm-7">
+                            <strong>{{ student.name }}</strong>
+                        </dd>
+
+                        <dt class="col-sm-5">Grade:</dt>
+                        <dd class="col-sm-7">{{ student.grade }}</dd>
+
+                        <dt class="col-sm-5">Status:</dt>
+                        <dd class="col-sm-7">
+                            {% if student.is_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">Enrolled:</dt>
+                        <dd class="col-sm-7">{{ student.created_at|date:"M d, Y" }}</dd>
+
+                        <dt class="col-sm-5">Student ID:</dt>
+                        <dd class="col-sm-7">#{{ student.id }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Parent Information -->
+            <div class="card card-shadow mt-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-heart"></i> Parent Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Name:</dt>
+                        <dd class="col-sm-7">
+                            <a href="{% url 'parent_detail' student.parent.id %}">
+                                {{ student.parent.name }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-5">Email:</dt>
+                        <dd class="col-sm-7">{{ student.parent.email }}</dd>
+
+                        <dt class="col-sm-5">Phone:</dt>
+                        <dd class="col-sm-7">{{ student.parent.phone_number }}</dd>
+
+                        <dt class="col-sm-5">Address:</dt>
+                        <dd class="col-sm-7">{{ student.parent.home_address }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Bus Information -->
+            <div class="card card-shadow mt-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bus-front"></i> Bus Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Bus:</dt>
+                        <dd class="col-sm-7">
+                            <a href="{% url 'bus_detail' student.bus.id %}">
+                                {{ student.bus.registration }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-5">Driver:</dt>
+                        <dd class="col-sm-7">{{ student.bus.driver_name }}</dd>
+
+                        <dt class="col-sm-5">Route:</dt>
+                        <dd class="col-sm-7">{{ student.bus.route_name }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Location Information -->
+            <div class="card card-shadow mt-3">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt"></i> Location Details
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Pickup:</dt>
+                        <dd class="col-sm-7">{{ student.pick_up_location }}</dd>
+
+                        <dt class="col-sm-5">Dropoff:</dt>
+                        <dd class="col-sm-7">{{ student.drop_off_location }}</dd>
+
+                        <dt class="col-sm-5">Emergency Contact:</dt>
+                        <dd class="col-sm-7">{{ student.emergency_contact }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card card-shadow mt-3">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'edit_student' student.id %}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil"></i> Edit Student
+                        </a>
+                        {% if student.is_active %}
+                            <a href="{% url 'deactivate_student' student.id %}" class="btn btn-outline-danger">
+                                <i class="bi bi-x-circle"></i> Deactivate Student
+                            </a>
+                        {% else %}
+                            <a href="{% url 'reactivate_student' student.id %}" class="btn btn-outline-success">
+                                <i class="bi bi-check-circle"></i> Reactivate Student
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'student_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-people"></i> All Students
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Attendance & History -->
+        <div class="col-lg-8 mb-4">
+            <!-- Today's Attendance -->
+            <div class="card card-shadow mb-4">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clipboard-check"></i> Today's Attendance
+                    </h6>
+                    <span class="badge bg-primary">{{ today|date:"M d, Y" }}</span>
+                </div>
+                <div class="card-body">
+                    {% if today_attendance %}
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <small class="text-muted">Status</small>
+                                        <br>
+                                        <span class="badge
+                                            {% if today_attendance.status == 'picked_up' %}bg-success
+                                            {% elif today_attendance.status == 'dropped_off' %}bg-info
+                                            {% elif today_attendance.status == 'absent' %}bg-danger
+                                            {% elif today_attendance.status == 'late' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}
+                                            fs-6">
+                                            {{ today_attendance.get_status_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <small class="text-muted">Pickup Time</small>
+                                        <br>
+                                        <strong>
+                                            {% if today_attendance.pickup_time %}
+                                                {{ today_attendance.pickup_time|time:"g:i A" }}
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body py-2">
+                                        <small class="text-muted">Dropoff Time</small>
+                                        <br>
+                                        <strong>
+                                            {% if today_attendance.dropoff_time %}
+                                                {{ today_attendance.dropoff_time|time:"g:i A" }}
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% if today_attendance.notes %}
+                            <div class="mt-3">
+                                <small class="text-muted">Notes:</small>
+                                <p class="mb-0">{{ today_attendance.notes }}</p>
+                            </div>
+                        {% endif %}
+                        <div class="mt-3 text-center">
+                            <a href="{% url 'attendance_detail' today_attendance.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View Full Details
+                            </a>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-clock display-4 text-muted"></i>
+                            <p class="text-muted mt-2">No attendance recorded for today.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Attendance History -->
+            <div class="card card-shadow">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clock-history"></i> Attendance History
+                        <span class="badge bg-primary ms-2">{{ attendance_records|length }}</span>
+                    </h6>
+                    <a href="{% url 'attendance_reports' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-file-earmark-text"></i> View All Reports
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if attendance_records %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Pickup Time</th>
+                                        <th>Dropoff Time</th>
+                                        <th>Bus</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in attendance_records %}
+                                        <tr>
+                                            <td>{{ record.date|date:"M d, Y" }}</td>
+                                            <td>
+                                                <span class="badge
+                                                    {% if record.status == 'picked_up' %}bg-success
+                                                    {% elif record.status == 'dropped_off' %}bg-info
+                                                    {% elif record.status == 'absent' %}bg-danger
+                                                    {% elif record.status == 'late' %}bg-warning
+                                                    {% else %}bg-secondary{% endif %}">
+                                                    {{ record.get_status_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if record.pickup_time %}
+                                                    {{ record.pickup_time|time:"g:i A" }}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if record.dropoff_time %}
+                                                    {{ record.dropoff_time|time:"g:i A" }}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ record.bus.registration }}</td>
+                                            <td>
+                                                <a href="{% url 'attendance_detail' record.id %}"
+                                                   class="btn btn-sm btn-outline-info"
+                                                   title="View Details">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-clock-history display-4 text-muted"></i>
+                            <p class="text-muted mt-2">No attendance history found.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statistics Summary -->
+            <div class="row mt-4">
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center py-2">
+                            <h6 class="mb-0">Total Records</h6>
+                            <h3 class="mb-0">{{ attendance_records|length }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center py-2">
+                            <h6 class="mb-0">Present</h6>
+                            <h3 class="mb-0">{{ present_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center py-2">
+                            <h6 class="mb-0">Absent</h6>
+                            <h3 class="mb-0">{{ absent_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card card-shadow mt-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <h6 class="mb-0">
+                <i class="bi bi-exclamation-triangle"></i> Danger Zone
+            </h6>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <p class="mb-0">
+                        <strong>Deactivate Student</strong>
+                        <br>
+                        <small class="text-muted">
+                            This will remove {{ student.name }} from active lists.
+                            This action can be undone.
+                        </small>
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if student.is_active %}
+                        <a href="{% url 'deactivate_student' student.id %}"
+                           class="btn btn-danger">
+                            <i class="bi bi-x-circle"></i> Deactivate
+                        </a>
+                    {% else %}
+                        <a href="{% url 'reactivate_student' student.id %}"
+                           class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Reactivate
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
