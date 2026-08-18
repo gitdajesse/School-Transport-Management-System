@@ -1338,27 +1338,57 @@ def assistant_attendance(request):
     # Get all students on this bus
     students = Student.objects.filter(bus = bus, is_active = True).order_by('name')
 
-    # Get today's attendance records for these students
-    attendance_records = {}
+    # Create a list of student data with their attendance record
+    student_attendance_data = []
 
     for student in students:
+        # Get today's attendance record for this student
         try:
             record = Attendance.objects.get(student = student, date = today)
-            attendance_records[student.id] = record
+            has_record = True
+            status = record.status
+            status_display = record.get_status_display()
+            is_picked_up = record.is_picked_up() if hasattr(record, 'is_picked_up') else status in ['picked_up', 'dropped_off']
+            is_absent = record.is_absent() if hasattr(record, 'is_absent') else status == 'absent'
+            is_dropped_off = record.is_dropped_off() if hasattr(record, 'is_dropped_off') else status == 'dropped_off'
+            pickup_time = record.pickup_time
+            dropoff_time = record.dropoff_time
+            record_id = record.id
         except Attendance.DoesNotExist:
-            attendance_records[student.id] = None
+            has_record = False
+            status = 'Pending'
+            status_display = 'Pending'
+            is_picked_up = False
+            is_absent = False
+            is_dropped_off = False
+            pickup_time = None
+            dropoff_time = None
+            record_id = None
+
+        student_attendance_data.append({
+            'student': student,
+            'record': record if has_record else None,
+            'has_record': has_record,
+            'status': status,
+            'status_display': status_display,
+            'is_picked_up': is_picked_up,
+            'is_absent': is_absent,
+            'is_dropped_off': is_dropped_off,
+            'pickup_time': pickup_time,
+            'dropoff_time':  dropoff_time,
+            'record_id': record_id,
+        })
 
     # Statistics
     total_students = students.count()
-    picked_up = len([s for s in students if attendance_records.get(s.id) and attendance_records[s.id].status in ['picked_up', 'dropped_off']])
-    dropped_off = len([s for s in students if attendance_records.get(s.id) and attendance_records[s.id].status == 'dropped_off'])
-    absent = len([s for s in students if attendance_records.get(s.id) and attendance_records[s.id].status == 'absent'])
+    picked_up = len([s for s in student_attendance_data if s['is_picked_up']])
+    dropped_off = len([s for s in student_attendance_data if s['is_dropped_off']])
+    absent = len([s for s in student_attendance_data if s['is_absent']])
     pending = total_students - picked_up - absent
 
     context = {
         'bus': bus,
-        'students': students,
-        'attendance_records': attendance_records,
+        'student_attendance_data': student_attendance_data,
         'today': today,
         'total_students': total_students,
         'picked_up': picked_up,
@@ -1401,7 +1431,7 @@ def mark_attendance(request):
             )
 
     try:
-        student = Student.objects.filter(id = student_id)
+        student = Student.objects.get(id = student_id)
         assistant = request.user.assistant_profile
 
         # Verify student is on assistant's bus
@@ -1425,7 +1455,14 @@ def mark_attendance(request):
 
         # Mark the appropriate status
         if action == 'pickup':
-            attendance.mark_picked_up(request.user, notes)
+            attendance.status = 'picked_up'
+            attendance.pickup_time = timezone.now()
+            if notes:
+                attendance.notes = notes
+            attendance.recorded_by = request.user
+            attendance.last_modified_by = request.user
+            attendance.save()
+
             message = f"{student.name} marked as picked up"
 
         elif action == 'dropoff':
@@ -1433,15 +1470,34 @@ def mark_attendance(request):
                 return JsonResponse({
                     'error': 'Student was not picked up'}, status = 400
                     )
-            attendance.mark_dropped_off(request.user, notes)
+            attendance.status = 'dropped_off'
+            attendance.dropoff_time = timezone.now()
+            if notes:
+                attendance.notes = notes
+            attendance.last_modified_by = request.user
+            attendance.save()
+
             message = f"{student.name} marked as dropped off"
 
         elif action == 'absent':
-            attendance.mark_absent(request.user, notes)
+            attendance.status = 'absent'
+            if notes:
+                attendance.notes = notes
+            attendance.recorded_by = request.user
+            attendance.last_modified_by = request.user
+            attendance.save()
+
             message = f"{student.name} marked as absent"
 
         elif action == 'late':
-            attendance.mark_late(request.user, notes)
+            attendance.status = 'late'
+            attendance.pickup_time = timezone.now()
+            if notes:
+                attendance.notes = notes
+            attendance.recorded_by = request.user
+            attendance.last_modified_by = request.user
+            attendance.save()
+
             message = f"{student.name} marked as late"
 
         else:
@@ -1465,10 +1521,10 @@ def mark_attendance(request):
             'status': attendance.status,
             'pickup_time': attendance.pickup_time.strftime('%I:%M %p') if attendance.pickup_time else None,
             'dropoff_time': attendance.dropoff_time.strftime('%I:%M %p') if attendance.dropoff_time else None,
-            'is_picked_up': attendance.is_picked_up(),
-            'is_dropped_off': attendance.is_dropped_off(),
-            'is_absent': attendance.is_absent(),
-            'is_late': attendance.is_late(),
+            'is_picked_up': attendance.status in ['picked_up', 'dropped_off'],
+            'is_dropped_off': attendance.status == 'dropped_off',
+            'is_absent': attendance.status == 'absent',
+            'is_late': attendance.status == 'late'
         })
 
     except Student.DoesNotExist:
@@ -1483,6 +1539,56 @@ def mark_attendance(request):
         return JsonResponse({
             'error': str(e)}, status = 500
             )
+
+
+@login_required
+def reset_attendance(request):
+    """ Reset attendance for a specific student """
+    if request.user.user_type != 'assistant':
+        return JsonResponse({
+            'error': 'Access denied'}, status = 403
+        )
+
+    if request.method != 'POST':
+        return JsonResponse({
+            'error': 'Invalid request method'}, status = 400
+        )
+
+    student_id = request.POST.get('student_id')
+
+    if not student_id:
+        return JsonResponse({
+            'error': 'Student ID required'}, status = 400
+        )
+
+    try:
+        student = Student.objects.get(id = student_id)
+        assistant = request.user.assistant_profile
+
+        # Verify student is on assistant's bus
+        if student.bus != assistant.bus:
+            return JsonResponse({
+                'error': 'Student not on your bus'}, status = 403
+            )
+
+        today = timezone.now().date()
+
+        # Delete today's attendance record
+        deleted_count, _ = Attendance.objects.filter(student = student, date = today).delete()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Attendance reset for {student.name}',
+            'deleted': deleted_count > 0
+        })
+    except Student.DoesNotExist:
+        return JsonResponse({
+            'error': 'Student not found'}, status = 404
+        )
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)}, status = 500
+        )
 
 
 @login_required

@@ -15,8 +15,8 @@
             </p>
         </div>
         <div>
-            <a href="{% url 'assistant_dashboard' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Dashboard
+            <a href="{% url 'manage_attendance' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Hub
             </a>
         </div>
     </div>
@@ -68,12 +68,16 @@
         <button class="btn btn-secondary" onclick="resetAll()">
             <i class="bi bi-arrow-counterclockwise"></i> Reset All
         </button>
+        <!-- ✅ Added: Auto Refresh toggle -->
+        <button class="btn btn-outline-info" onclick="toggleAutoRefresh()">
+            <i class="bi bi-clock"></i> Auto-Refresh: <span id="autoRefreshStatus">On</span>
+        </button>
     </div>
 
     <!-- Student List -->
     <div class="card card-shadow">
         <div class="card-body p-0">
-            {% if students %}
+            {% if student_attendance_data %}
                 <div class="table-responsive">
                     <table class="table table-hover mb-0" id="attendanceTable">
                         <thead class="table-light">
@@ -89,83 +93,84 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for student in students %}
-                                {% with record=attendance_records|get_item:student.id %}
-                                    <tr id="student-{{ student.id }}"
-                                        class="{% if record and record.is_picked_up %}table-success{% elif record and record.is_absent %}table-danger{% endif %}">
-                                        <td>{{ forloop.counter }}</td>
-                                        <td>
-                                            <i class="bi bi-person-fill text-primary"></i>
-                                            {{ student.name }}
-                                        </td>
-                                        <td>{{ student.grade }}</td>
-                                        <td>{{ student.pick_up_location|truncatechars:20 }}</td>
-                                        <td>
-                                            <span class="badge
-                                                {% if record and record.status == 'picked_up' %}bg-success
-                                                {% elif record and record.status == 'dropped_off' %}bg-info
-                                                {% elif record and record.status == 'absent' %}bg-danger
-                                                {% elif record and record.status == 'late' %}bg-warning
-                                                {% else %}bg-secondary{% endif %}">
-                                                <i class="bi
-                                                    {% if record and record.status == 'picked_up' %}bi-check-circle
-                                                    {% elif record and record.status == 'dropped_off' %}bi-box-arrow-right
-                                                    {% elif record and record.status == 'absent' %}bi-x-circle
-                                                    {% elif record and record.status == 'late' %}bi-clock
-                                                    {% else %}bi-question-circle{% endif %}">
-                                                </i>
-                                                {{ record.get_status_display|default:"Pending" }}
+                            {% for item in student_attendance_data %}
+                                <tr id="student-{{ item.student.id }}"
+                                    class="{% if item.is_picked_up %}table-success{% elif item.is_absent %}table-danger{% endif %}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <i class="bi bi-person-fill text-primary"></i>
+                                        {{ item.student.name }}
+                                    </td>
+                                    <td>{{ item.student.grade }}</td>
+                                    <td>{{ item.student.pick_up_location|truncatechars:20 }}</td>
+                                    <td>
+                                        <span class="badge
+                                            {% if item.status == 'picked_up' %}bg-success
+                                            {% elif item.status == 'dropped_off' %}bg-info
+                                            {% elif item.status == 'absent' %}bg-danger
+                                            {% elif item.status == 'late' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            <i class="bi
+                                                {% if item.status == 'picked_up' %}bi-check-circle
+                                                {% elif item.status == 'dropped_off' %}bi-box-arrow-right
+                                                {% elif item.status == 'absent' %}bi-x-circle
+                                                {% elif item.status == 'late' %}bi-clock
+                                                {% else %}bi-question-circle{% endif %}">
+                                            </i>
+                                            {{ item.status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if item.pickup_time %}
+                                            {{ item.pickup_time|time:"g:i A" }}
+                                        {% elif item.dropoff_time %}
+                                            {{ item.dropoff_time|time:"g:i A" }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <button class="btn btn-success"
+                                            title="Mark Pick Up"
+                                                    onclick="markStudent({{ item.student.id }}, 'pickup')"
+                                                    {% if item.is_picked_up %}disabled{% endif %}>
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                            <button class="btn btn-info"
+                                            title="Mark Drop off"
+                                                    onclick="markStudent({{ item.student.id }}, 'dropoff')"
+                                                    {% if not item.is_picked_up or item.is_dropped_off %}disabled{% endif %}>
+                                                <i class="bi bi-box-arrow-right"></i>
+                                            </button>
+                                            <button class="btn btn-warning"
+                                            title="Mark Late"
+                                                    onclick="markStudent({{ item.student.id }}, 'late')"
+                                                    {% if item.is_picked_up %}disabled{% endif %}>
+                                                <i class="bi bi-clock"></i>
+                                            </button>
+                                            <button class="btn btn-danger"
+                                            title="Mark Absent"
+                                                    onclick="markStudent({{ item.student.id }}, 'absent')"
+                                                    {% if item.is_picked_up %}disabled{% endif %}>
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.has_record %}
+                                            <a href="{% url 'attendance_detail' item.record.id %}"
+                                               class="btn btn-sm btn-outline-info"
+                                               title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted">
+                                                <i class="bi bi-eye-slash"></i>
                                             </span>
-                                        </td>
-                                        <td>
-                                            {% if record and record.pickup_time %}
-                                                {{ record.pickup_time|time:"g:i A" }}
-                                            {% elif record and record.dropoff_time %}
-                                                {{ record.dropoff_time|time:"g:i A" }}
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <button class="btn btn-success"
-                                                        onclick="markStudent({{ student.id }}, 'pickup')"
-                                                        {% if record and record.is_picked_up %}disabled{% endif %}>
-                                                    <i class="bi bi-check-lg"></i>
-                                                </button>
-                                                <button class="btn btn-info"
-                                                        onclick="markStudent({{ student.id }}, 'dropoff')"
-                                                        {% if not record or not record.is_picked_up or record.is_dropped_off %}disabled{% endif %}>
-                                                    <i class="bi bi-box-arrow-right"></i>
-                                                </button>
-                                                <button class="btn btn-warning"
-                                                        onclick="markStudent({{ student.id }}, 'late')"
-                                                        {% if record and record.is_picked_up %}disabled{% endif %}>
-                                                    <i class="bi bi-clock"></i>
-                                                </button>
-                                                <button class="btn btn-danger"
-                                                        onclick="markStudent({{ student.id }}, 'absent')"
-                                                        {% if record and record.is_picked_up %}disabled{% endif %}>
-                                                    <i class="bi bi-x-lg"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                        <!-- ✅ ADDED: Link to attendance detail -->
-                                        <td class="text-center">
-                                            {% if record %}
-                                                <a href="{% url 'attendance_detail' record.id %}"
-                                                   class="btn btn-sm btn-outline-info"
-                                                   title="View Details">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                            {% else %}
-                                                <span class="text-muted">
-                                                    <i class="bi bi-eye-slash"></i>
-                                                </span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% endwith %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -181,32 +186,23 @@
     </div>
 
     <div class="mt-4">
-        <a href="{% url 'assistant_dashboard' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-speedometer2"></i> Dashboard
+        <a href="{% url 'manage_attendance' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-speedometer2"></i> Management Hub
         </a>
-        <a href="{% url 'manage_attendance' %}" class="btn btn-outline-primary">
-            <i class="bi bi-grid-3x3-gap-fill"></i>
-            Management Hub
-        </a>
-        <!-- ✅ ADDED: Refresh button -->
-        <button onclick="location.reload()" class="btn btn-outline-info">
-            <i class="bi bi-arrow-clockwise"></i> Refresh
+        <button onclick="manualRefresh()" class="btn btn-outline-info">
+            <i class="bi bi-arrow-clockwise"></i> Refresh Now
         </button>
-        <!-- ✅ ADDED: Link to reports if assistant has permission -->
-        <a href="{% url 'attendance_reports' %}" class="btn btn-outline-primary">
-            <i class="bi bi-file-earmark-text"></i> View Reports
-        </a>
     </div>
 
     <!-- JavaScript -->
     <script>
+        // ============================================
+        // MARK INDIVIDUAL STUDENT
+        // ============================================
         function markStudent(studentId, action) {
             if (!confirm(`Are you sure you want to mark this student as ${action}?`)) {
                 return;
             }
-
-            const row = document.getElementById(`student-${studentId}`);
-            const statusBadge = row.querySelector('.badge');
 
             fetch('{% url "mark_attendance" %}', {
                 method: 'POST',
@@ -219,7 +215,6 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update UI
                     location.reload();
                 } else {
                     alert('Error: ' + data.error);
@@ -230,6 +225,9 @@
             });
         }
 
+        // ============================================
+        // MARK ALL STUDENTS
+        // ============================================
         function markAll(action) {
             if (!confirm(`Are you sure you want to mark ALL students as ${action}?`)) {
                 return;
@@ -246,7 +244,9 @@
                 return;
             }
 
-            // Process each student
+            let completed = 0;
+            const total = studentIds.length;
+
             studentIds.forEach(id => {
                 fetch('{% url "mark_attendance" %}', {
                     method: 'POST',
@@ -255,37 +255,157 @@
                         'X-CSRFToken': '{{ csrf_token }}'
                     },
                     body: `student_id=${id}&action=${action}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    completed++;
+                    if (completed === total) {
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    completed++;
+                    if (completed === total) {
+                        location.reload();
+                    }
                 });
             });
-
-            setTimeout(() => location.reload(), 1000);
         }
 
+        // ============================================
+        // ✅ FIXED: RESET ALL ATTENDANCE RECORDS
+        // ============================================
         function resetAll() {
-            if (!confirm('Are you sure you want to reset all attendance records for today?')) {
+            if (!confirm('⚠️ Are you sure you want to reset ALL attendance records for today?\n\nThis will remove all pickup, dropoff, and absence records for all students on this bus.')) {
                 return;
             }
 
-            // Reload to reset
-            location.reload();
+            const studentIds = [];
+            document.querySelectorAll('#attendanceTable tbody tr').forEach(row => {
+                const id = row.id.replace('student-', '');
+                studentIds.push(id);
+            });
+
+            if (studentIds.length === 0) {
+                alert('No students to reset.');
+                return;
+            }
+
+            // Show loading state
+            const resetButton = event.target;
+            resetButton.disabled = true;
+            resetButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Resetting...';
+
+            let completed = 0;
+            const total = studentIds.length;
+
+            studentIds.forEach(id => {
+                // Reset by marking as 'pending' (or delete the record)
+                fetch('{% url "reset_attendance" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: `student_id=${id}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    completed++;
+                    if (completed === total) {
+                        location.reload();
+                    }
+                })
+                .catch(error => {
+                    completed++;
+                    if (completed === total) {
+                        location.reload();
+                    }
+                });
+            });
         }
 
-        // ✅ ADDED: Auto-refresh if there are pending records
-        document.addEventListener('DOMContentLoaded', function() {
+        // ============================================
+        // ✅ FIXED: MANUAL REFRESH
+        // ============================================
+        function manualRefresh() {
+            const refreshButton = event.target;
+            refreshButton.disabled = true;
+            refreshButton.innerHTML = '<i class="bi bi-hourglass-split"></i> Refreshing...';
+
+            setTimeout(() => {
+                location.reload();
+            }, 500);
+        }
+
+        // ============================================
+        // AUTO-REFRESH TOGGLE
+        // ============================================
+        let autoRefreshEnabled = true;
+        let autoRefreshTimer = null;
+
+        function toggleAutoRefresh() {
+            autoRefreshEnabled = !autoRefreshEnabled;
+            const status = document.getElementById('autoRefreshStatus');
+            const button = event.target;
+
+            if (autoRefreshEnabled) {
+                status.textContent = 'On';
+                status.style.color = 'green';
+                button.classList.remove('btn-outline-secondary');
+                button.classList.add('btn-outline-info');
+                startAutoRefresh();
+            } else {
+                status.textContent = 'Off';
+                status.style.color = 'red';
+                button.classList.remove('btn-outline-info');
+                button.classList.add('btn-outline-secondary');
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+            }
+
             let hasPending = false;
-            {% for student in students %}
-                {% with record=attendance_records|get_item:student.id %}
-                    {% if not record or record.status == 'pending' %}
-                        hasPending = true;
-                    {% endif %}
-                {% endwith %}
+            {% for item in student_attendance_data %}
+                {% if item.status == 'pending' %}
+                    hasPending = true;
+                {% endif %}
             {% endfor %}
 
-            // Refresh every 30 seconds if there are pending records
             if (hasPending) {
-                setTimeout(function() {
-                    location.reload();
-                }, 30000);
+                autoRefreshTimer = setInterval(() => {
+                    if (autoRefreshEnabled) {
+                        location.reload();
+                    }
+                }, 30000); // Refresh every 30 seconds
+            }
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
+            }
+        }
+
+        // ============================================
+        // INITIALIZE ON PAGE LOAD
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Start auto-refresh if there are pending records
+            let hasPending = false;
+            {% for item in student_attendance_data %}
+                {% if item.status == 'pending' %}
+                    hasPending = true;
+                {% endif %}
+            {% endfor %}
+
+            if (hasPending) {
+                startAutoRefresh();
             }
         });
     </script>

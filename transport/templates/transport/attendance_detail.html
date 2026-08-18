@@ -1,19 +1,28 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}Attendance Details - {{ attendance.student.name }}{% endblock %}
+{% block title %}
+    Attendance Details - {{ attendance.student.name }}
+{% endblock %}
 
 {% block body %}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="page-title mb-0">
-            <i class="bi bi-clipboard-check"></i> Attendance Details
+            <i class="bi bi-clipboard-check"></i>
+            Attendance Details
         </h1>
         <div>
-            <a href="{% url 'attendance_reports' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Reports
+            <a href="{% url 'assistant_attendance' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Attendance
             </a>
             {% if user.user_type == 'admin' %}
+                <a href="{% url 'attendance_reports' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Reports
+                </a>
                 <a href="{% url 'edit_attendance' attendance.id %}" class="btn btn-primary">
-                    <i class="bi bi-pencil"></i> Edit Record
+                    <i class="bi bi-pencil"></i>
+                    Edit Record
                 </a>
             {% endif %}
         </div>
@@ -54,25 +63,37 @@
                             <div class="card bg-light">
                                 <div class="card-body text-center py-2">
                                     <small class="text-muted d-block">Date</small>
-                                    <strong>{{ attendance.date|date:"l, F d, Y" }}</strong>
+                                    <strong>
+                                        {{ attendance.date|date:"l, F d, Y" }}
+                                    </strong>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card bg-light">
                                 <div class="card-body text-center py-2">
-                                    <small class="text-muted d-block">Bus</small>
-                                    <strong>{{ attendance.bus.registration }}</strong>
+                                    <small class="text-muted d-block">
+                                        Bus
+                                    </small>
+                                    <strong>
+                                        {{ attendance.bus.registration }}
+                                    </strong>
                                     <br>
-                                    <small class="text-muted">{{ attendance.bus.route_name }}</small>
+                                    <small class="text-muted">
+                                        {{ attendance.bus.route_name }}
+                                    </small>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card bg-light">
                                 <div class="card-body text-center py-2">
-                                    <small class="text-muted d-block">Assistant</small>
-                                    <strong>{{ attendance.assistant.name|default:"N/A" }}</strong>
+                                    <small class="text-muted d-block">
+                                        Assistant
+                                    </small>
+                                    <strong>
+                                        {{ attendance.assistant.name|default:"N/A" }}
+                                    </strong>
                                 </div>
                             </div>
                         </div>
@@ -80,7 +101,8 @@
 
                     <!-- Timeline -->
                     <h6 class="mb-3">
-                        <i class="bi bi-clock-history"></i> Today's Journey
+                        <i class="bi bi-clock-history"></i>
+                        Today's Journey
                     </h6>
 
                     <div class="timeline">
@@ -90,7 +112,9 @@
                                 <i class="bi bi-house"></i>
                             </div>
                             <div class="timeline-content">
-                                <h6 class="mb-0">Left Home</h6>
+                                <h6 class="mb-0">
+                                    Left Home
+                                </h6>
                                 <small class="text-muted">
                                     {% if attendance.pickup_time %}
                                         Estimated: {{ attendance.pickup_time|time:"g:i A" }}
@@ -107,13 +131,21 @@
                                 <i class="bi bi-bus-front"></i>
                             </div>
                             <div class="timeline-content">
-                                <h6 class="mb-0">Picked Up</h6>
+                                <h6 class="mb-0">
+                                    Picked Up
+                                </h6>
                                 {% if attendance.pickup_time %}
-                                    <strong class="text-success">{{ attendance.pickup_time|time:"g:i A" }}</strong>
+                                    <strong class="text-success">
+                                        {{ attendance.pickup_time|time:"g:i A" }}
+                                    </strong>
                                     <br>
-                                    <small class="text-muted">{{ attendance.student.pick_up_location }}</small>
+                                    <small class="text-muted">
+                                        {{ attendance.student.pick_up_location }}
+                                    </small>
                                 {% else %}
-                                    <small class="text-muted">Not yet picked up</small>
+                                    <small class="text-muted">
+                                        Not yet picked up
+                                    </small>
                                 {% endif %}
                             </div>
                         </div>
@@ -124,15 +156,25 @@
                                 <i class="bi bi-building"></i>
                             </div>
                             <div class="timeline-content">
-                                <h6 class="mb-0">Dropped Off</h6>
+                                <h6 class="mb-0">
+                                    Dropped Off
+                                </h6>
                                 {% if attendance.dropoff_time %}
-                                    <strong class="text-info">{{ attendance.dropoff_time|time:"g:i A" }}</strong>
+                                    <strong class="text-info">
+                                        {{ attendance.dropoff_time|time:"g:i A" }}
+                                    </strong>
                                     <br>
-                                    <small class="text-muted">{{ attendance.student.drop_off_location }}</small>
+                                    <small class="text-muted">
+                                        {{ attendance.student.drop_off_location }}
+                                    </small>
                                 {% elif attendance.is_picked_up %}
-                                    <small class="text-warning">On the way to school</small>
+                                    <small class="text-warning">
+                                        On the way to school
+                                    </small>
                                 {% else %}
-                                    <small class="text-muted">Not yet dropped off</small>
+                                    <small class="text-muted">
+                                        Not yet dropped off
+                                    </small>
                                 {% endif %}
                             </div>
                         </div>
@@ -142,7 +184,8 @@
                     {% if attendance.notes %}
                         <hr>
                         <h6 class="mb-2">
-                            <i class="bi bi-sticky"></i> Notes
+                            <i class="bi bi-sticky"></i>
+                            Notes
                         </h6>
                         <div class="alert alert-light">
                             {{ attendance.notes|linebreaks }}
@@ -178,7 +221,8 @@
             <div class="card card-shadow mb-4">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0">
-                        <i class="bi bi-person-badge"></i> Student Info
+                        <i class="bi bi-person-badge"></i>
+                        Student Info
                     </h6>
                 </div>
                 <div class="card-body">
