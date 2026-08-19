@@ -11,10 +11,18 @@
             Attendance Details
         </h1>
         <div>
-            <a href="{% url 'assistant_attendance' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i>
-                Back to Attendance
-            </a>
+            {% if user.user_type == 'parent' %}
+                <a href="{% url 'parent_attendance' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Child's Attendance
+                </a>
+            {% endif %}
+            {% if user.user_type == 'assistant' %}
+                <a href="{% url 'assistant_attendance' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Attendance
+                </a>
+            {% endif %}
             {% if user.user_type == 'admin' %}
                 <a href="{% url 'attendance_reports' %}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i>
@@ -258,18 +266,18 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <span>Total Records:</span>
-                        <strong>{{ student_records|length }}</strong>
+                        <strong>{{ total_records }}</strong>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Days Present:</span>
                         <strong class="text-success">
-                            {{ student_records|length }}
+                            {{ days_present }}
                         </strong>
                     </div>
                     <div class="d-flex justify-content-between">
                         <span>Days Absent:</span>
                         <strong class="text-danger">
-                            {{ student_records|length }}
+                            {{ days_absent }}
                         </strong>
                     </div>
                 </div>

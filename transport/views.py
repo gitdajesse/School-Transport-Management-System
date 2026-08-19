@@ -1621,12 +1621,27 @@ def parent_attendance(request):
     children = parent.children.filter(is_active = True).order_by('name')
     today = timezone.now().date()
 
+    # Initialize counters
+    total_children = children.count()
+    absent_count = 0
+    pending_count = 0
+    picked_up_count = 0
+
     # Get today's attendance for each child
     attendance_data = []
 
     for child in children:
         try:
             record = Attendance.objects.get(student = child, date = today)
+
+            # Count statuses
+            if record.status == 'picked_up':
+                picked_up_count += 1
+            elif record.status == 'absent':
+                absent_count += 1
+            elif record.status == 'pending':
+                pending_count += 1
+
             status = record.status
             pickup_time = record.pickup_time
             dropoff_time = record.dropoff_time
@@ -1636,6 +1651,7 @@ def parent_attendance(request):
             pickup_time = None
             dropoff_time = None
             has_record = False
+            pending_count += 1
 
         attendance_data.append({
             'student': child,
@@ -1651,6 +1667,10 @@ def parent_attendance(request):
         'children': attendance_data,
         'today': today,
         'parent': parent,
+        'total_children': total_children,
+        'absent_count': absent_count,
+        'pending_count': pending_count,
+        'picked_up_count': picked_up_count
     }
 
     return render(request, 'transport/parent_attendance.html', context)
@@ -1783,10 +1803,17 @@ def attendance_detail(request, attendance_id):
 
     # Get all records for this student
     student_records = Attendance.objects.filter(student = attendance.student).order_by('-date')[:30]
+    days_absent = Attendance.objects.filter(status = 'absent').count()
+    days_present = Attendance.objects.filter(status = 'dropped_off').count()
+
+    total_records = student_records.count()
 
     context = {
         'attendance': attendance,
         'student_records': student_records,
+        'total_records': total_records,
+        'days_present': days_present,
+        'days_absent': days_absent,
         'timeline': attendance.get_formatted_timeline()
     }
 

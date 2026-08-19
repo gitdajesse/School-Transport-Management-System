@@ -1,31 +1,67 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}
-    My Children's Attendance
-{% endblock %}
+{% block title %}My Children's Attendance{% endblock %}
 
 {% block body %}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="page-title">
-            <i class="bi bi-person-heart"></i>
-            My Children's Attendance
+        <h1 class="page-title mb-0">
+            <i class="bi bi-person-heart"></i> My Children's Attendance
         </h1>
         <div>
             <a href="{% url 'manage_payment' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i>
-                Back to Hub
+                <i class="bi bi-arrow-left"></i> Back to Hub
             </a>
         </div>
     </div>
 
-    <p class="text-muted">
-        {{ today|date:"l, F d, Y" }}
-    </p>
+    <p class="text-muted">{{ today|date:"l, F d, Y" }}</p>
+
+    <!-- Statistics Summary -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">Total Children</h6>
+                    <h3 class="mb-0">{{ total_children }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">Picked Up</h6>
+                    <h3 class="mb-0">
+                        {{ picked_up_count }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center py-2">
+                <h6 class="mb-0">Absent</h6>
+                <h3 class="mb-0">
+                    {{ absent_count }}
+                </h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center py-2">
+                <h6 class="mb-0">Pending</h6>
+                <h3 class="mb-0">
+                    {{ pending_count }}
+                </h3>
+            </div>
+        </div>
+    </div>
+    </div>
 
     <div class="row">
         {% for child in children %}
             <div class="col-md-6 mb-4">
-                <div class="card card-shadow">
+                <div class="card card-shadow h-100">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
@@ -33,18 +69,37 @@
                                     <i class="bi bi-person-fill text-primary"></i>
                                     {{ child.student.name }}
                                 </h5>
+                                <p class="card-text text-muted mb-1">
+                                    <i class="bi bi-mortarboard"></i> Grade {{ child.student.grade }}
+                                </p>
                                 <p class="card-text text-muted">
-                                    Grade {{ child.student.grade }} | Bus {{ child.bus.registration }}
+                                    <i class="bi bi-bus-front"></i> Bus {{ child.bus.registration }}
+                                    <br>
+                                    <small>{{ child.bus.route_name }}</small>
                                 </p>
                             </div>
+
+                            <!-- ✅ FIXED: Status Badge with "In Transit" -->
                             <span class="badge
-                                {% if child.status == 'picked_up' %}bg-success
-                                {% elif child.status == 'dropped_off' %}bg-info
+                                {% if child.status == 'picked_up' %}bg-warning text-dark
+                                {% elif child.status == 'dropped_off' %}bg-success
                                 {% elif child.status == 'absent' %}bg-danger
                                 {% elif child.status == 'late' %}bg-warning
                                 {% else %}bg-secondary{% endif %}
                                 fs-6 p-2">
-                                {{ child.get_status_display|default:"Pending" }}
+                                <i class="bi
+                                    {% if child.status == 'picked_up' %}bi-bus-front
+                                    {% elif child.status == 'dropped_off' %}bi-check-circle
+                                    {% elif child.status == 'absent' %}bi-x-circle
+                                    {% elif child.status == 'late' %}bi-clock
+                                    {% else %}bi-question-circle{% endif %}">
+                                </i>
+                                <!-- ✅ Show "In Transit" for picked up but not dropped off -->
+                                {% if child.status == 'picked_up' %}
+                                    In Transit 🚌
+                                {% else %}
+                                    {{ child.status|title|default:"Pending" }}
+                                {% endif %}
                             </span>
                         </div>
 
@@ -52,49 +107,92 @@
                             <hr>
                             <div class="row text-center">
                                 <div class="col-6">
-                                    <small class="text-muted">Pickup</small>
+                                    <small class="text-muted">
+                                        <i class="bi bi-bus-front"></i> Pickup
+                                    </small>
                                     <p class="mb-0">
                                         {% if child.pickup_time %}
-                                            <strong>
+                                            <strong class="text-success">
                                                 {{ child.pickup_time|time:"g:i A" }}
                                             </strong>
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ child.student.pick_up_location }}
+                                            </small>
                                         {% else %}
-                                            <span class="text-muted">
-                                                —
-                                            </span>
+                                            <span class="text-muted">—</span>
                                         {% endif %}
                                     </p>
                                 </div>
                                 <div class="col-6">
                                     <small class="text-muted">
-                                        Dropoff
+                                        <i class="bi bi-building"></i> Dropoff
                                     </small>
                                     <p class="mb-0">
                                         {% if child.dropoff_time %}
-                                            <strong>
+                                            <strong class="text-info">
                                                 {{ child.dropoff_time|time:"g:i A" }}
                                             </strong>
-                                        {% else %}
-                                            <span class="text-muted">
-                                                —
+                                            <br>
+                                            <small class="text-muted">
+                                                {{ child.student.drop_off_location }}
+                                            </small>
+                                        {% elif child.status == 'picked_up' %}
+                                            <!-- ✅ Show "In Transit" status text -->
+                                            <span class="text-warning">
+                                                <i class="bi bi-clock"></i> On the way 🚌
                                             </span>
+                                            <br>
+                                            <small class="text-muted">
+                                                Estimated arrival soon
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
                                         {% endif %}
                                     </p>
                                 </div>
                             </div>
+
+                            <!-- ✅ Add Journey Progress Indicator -->
+                            {% if child.status == 'picked_up' %}
+                                <div class="mt-2">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                                             role="progressbar"
+                                             style="width: 50%;"
+                                             aria-valuenow="50"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-arrow-right"></i> In transit to school
+                                    </small>
+                                </div>
+                            {% endif %}
+
                             <hr>
-                            <div class="d-grid">
+                            <div class="d-grid gap-2">
                                 <a href="{% url 'attendance_detail' child.student.attendance_records.last.id %}"
-                                   class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i>
-                                    View Details
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-eye"></i> View Full Details
                                 </a>
                             </div>
                         {% else %}
+                            <hr>
                             <div class="alert alert-info mt-2 mb-0">
                                 <i class="bi bi-info-circle"></i>
                                 Attendance not recorded yet for today.
+                                <br>
+                                <small>Check back later for updates.</small>
                             </div>
+                            {% if child.student.attendance_records.exists %}
+                                <div class="mt-2">
+                                    <a href="#" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-clock-history"></i> View History
+                                    </a>
+                                </div>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </div>
@@ -104,6 +202,10 @@
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
                     You haven't registered any children yet.
+                    <br>
+                    <a href="{% url 'manage_students' %}" class="btn btn-primary btn-sm mt-2">
+                        <i class="bi bi-person-plus"></i> Register Your Child
+                    </a>
                 </div>
             </div>
         {% endfor %}
@@ -114,14 +216,36 @@
         <div class='card shadow-sm border-0'>
             <div class='card-body d-flex gap-2 flex-wrap'>
                 <a href="{% url 'parent_dashboard' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-speedometer2"></i>
-                    Dashboard
+                    <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
                 <a href="{% url 'manage_payment' %}" class="btn btn-outline-primary">
-                    <i class="bi bi-grid-3x3-gap-fill"></i>
-                    Management Hub
+                    <i class="bi bi-grid-3x3-gap-fill"></i> Management Hub
                 </a>
+                <button onclick="location.reload()" class="btn btn-outline-info">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Status
+                </button>
             </div>
         </div>
     </div>
+
+    <!-- JavaScript for auto-refresh -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if any child is still pending or in transit (picked up but not dropped off)
+            let hasPendingOrInTransit = false;
+            {% for child in children %}
+                {% if child.status == 'pending' or child.status == 'picked_up' %}
+                    hasPendingOrInTransit = true;
+                {% endif %}
+            {% endfor %}
+
+            // If there are pending or in-transit records, refresh every 30 seconds
+            if (hasPendingOrInTransit) {
+                console.log('Auto-refresh enabled: pending or in-transit records detected');
+                setTimeout(function() {
+                    location.reload();
+                }, 30000); // Refresh every 30 seconds
+            }
+        });
+    </script>
 {% endblock %}
