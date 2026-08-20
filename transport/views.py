@@ -1802,11 +1802,16 @@ def attendance_detail(request, attendance_id):
             return redirect('index')
 
     # Get all records for this student
-    student_records = Attendance.objects.filter(student = attendance.student).order_by('-date')[:30]
-    days_absent = Attendance.objects.filter(status = 'absent').count()
-    days_present = Attendance.objects.filter(status = 'dropped_off').count()
+    all_student_records = Attendance.objects.filter(student = attendance.student)
+    student_records = all_student_records.order_by('-date')[:30]
 
-    total_records = student_records.count()
+    total_records = all_student_records.count()
+
+    days_absent = all_student_records.filter(status = 'absent').count()
+    dropped_off = all_student_records.filter(status = 'dropped_off').count()
+    picked_up = all_student_records.filter(status = 'picked_up').count()
+
+    days_present = picked_up + dropped_off
 
     context = {
         'attendance': attendance,
@@ -1829,48 +1834,87 @@ def attendance_reports(request):
         messages.error(request, 'Access denied. Only admins can view reports.')
         return redirect('index')
 
-    # Get filter parameters
-    date_from = request.POST.get('date_from')
-    date_to = request.POST.get('date_to')
-    bus_id = request.POST.get('bus')
-    status_filter = request.POST.get('status')
+    # Get filter parameters - ✅ Use GET method
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    bus_id = request.GET.get('bus')
+    status_filter = request.GET.get('status')
 
     # Default to this month
     if not date_from:
-        date_from = datetime.now().date().replace(day = 1).strftime('%Y-%m-%d')
+        date_from = datetime.now().date().replace(day=1).strftime('%Y-%m-%d')
     if not date_to:
         date_to = datetime.now().date().strftime('%Y-%m-%d')
 
-    # Build query
+    # ✅ Build query FIRST
     records = Attendance.objects.all()
 
+    # Apply filters
     if date_from:
-        records = records.filter(date__gte = date_from)
+        records = records.filter(date__gte=date_from)
     if date_to:
-        records = records.filter(date__lte = date_to)
+        records = records.filter(date__lte=date_to)
     if bus_id:
-        records = records.filter(bus_id = bus_id)
+        records = records.filter(bus_id=bus_id)
     if status_filter:
-        records = records.filter(status = status_filter)
+        records = records.filter(status=status_filter)
 
+    # ✅ Now calculate ALL statistics from the filtered records
+    # Count by status
+    late = records.filter(status='late').count()
+    picked_up = records.filter(status='picked_up').count()
+    dropped_off = records.filter(status='dropped_off').count()
+    absent = records.filter(status='absent').count()
+    pending = records.filter(status='pending').count()
+
+    # Completed = picked_up + dropped_off
+    completed = picked_up + dropped_off
+
+    # Total records
+    total_records = records.count()
+
+    # Select related fields for display
     records = records.select_related('student', 'bus', 'student__parent')
 
-    # Summary statistics
-    total_records = records.count()
-    status_summary = records.values('status').annotate(count = Count('status'))
+    # Summary statistics by status
+    status_summary = records.values('status').annotate(count=Count('status'))
+
+    # Add status display names
+    status_choices = dict(Attendance.ATTENDANCE_STATUS)
+    for item in status_summary:
+        item['get_status_display'] = status_choices.get(item['status'], item['status'])
 
     # Group by bus
-    bus_summary = records.values('bus__registration', 'bus__route_name').annotate(count = Count('id')).order_by('-count')
+    bus_summary = records.values('bus__registration', 'bus__route_name').annotate(
+        total=Count('id'),
+        picked_up_count=Count('id', filter=Q(status='picked_up')),
+        dropped_off_count=Count('id', filter=Q(status='dropped_off')),
+        absent_count=Count('id', filter=Q(status='absent')),
+        late_count=Count('id', filter=Q(status='late')),
+        pending_count=Count('id', filter=Q(status='pending')),
+    ).order_by('-total')
 
     # Group by date
-    date_summary = records.values('date').annotate(count = Count('id')).order_by('-date')
+    date_summary = records.values('date').annotate(
+        total=Count('id'),
+        picked_up_count=Count('id', filter=Q(status='picked_up')),
+        dropped_off_count=Count('id', filter=Q(status='dropped_off')),
+        absent_count=Count('id', filter=Q(status='absent')),
+        late_count=Count('id', filter=Q(status='late')),
+    ).order_by('-date')
 
-    # Get all buses for filter
-    buses = Bus.objects.filter(is_active = True)
+    # Get all buses for filter dropdown
+    buses = Bus.objects.filter(is_active=True)
 
     context = {
-        'records': records[:200],
+        'records': records[:500],
         'total_records': total_records,
+        'completed': completed,
+        'picked_up': picked_up,
+        'dropped_off': dropped_off,
+        'absent': absent,
+        'late': late,
+        'pending': pending,
         'status_summary': status_summary,
         'bus_summary': bus_summary,
         'date_summary': date_summary,
@@ -1878,7 +1922,7 @@ def attendance_reports(request):
         'date_from': date_from,
         'date_to': date_to,
         'selected_bus': bus_id,
-        'selected_status': status_filter
+        'selected_status': status_filter,
     }
 
     return render(request, 'transport/attendance_reports.html', context)

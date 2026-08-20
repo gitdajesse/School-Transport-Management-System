@@ -437,6 +437,459 @@
             border-radius: 4px;
         }
     </style>
+{% extends 'transport/layout.html' %}
+
+{% block title %}
+    Attendance Details - {{ attendance.student.name }}
+{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-clipboard-check"></i>
+            Attendance Details
+        </h1>
+        <div>
+            {% if user.user_type == 'parent' %}
+                <a href="{% url 'parent_attendance' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Child's Attendance
+                </a>
+            {% endif %}
+            {% if user.user_type == 'assistant' %}
+                <a href="{% url 'assistant_attendance' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Attendance
+                </a>
+            {% endif %}
+            {% if user.user_type == 'admin' %}
+                <a href="{% url 'attendance_reports' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Reports
+                </a>
+                <a href="{% url 'edit_attendance' attendance.id %}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i>
+                    Edit Record
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Attendance Card -->
+        <div class="col-lg-8">
+            <div class="card card-shadow">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-fill text-primary"></i>
+                            {{ attendance.student.name }}
+                        </h5>
+                        <span class="badge
+                            {% if attendance.status == 'picked_up' %}bg-success
+                            {% elif attendance.status == 'dropped_off' %}bg-info
+                            {% elif attendance.status == 'absent' %}bg-danger
+                            {% elif attendance.status == 'late' %}bg-warning
+                            {% else %}bg-secondary{% endif %}
+                            fs-6 p-2">
+                            <i class="bi
+                                {% if attendance.status == 'picked_up' %}bi-check-circle
+                                {% elif attendance.status == 'dropped_off' %}bi-box-arrow-right
+                                {% elif attendance.status == 'absent' %}bi-x-circle
+                                {% elif attendance.status == 'late' %}bi-clock
+                                {% else %}bi-question-circle{% endif %}">
+                            </i>
+                            {{ attendance.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Quick Info Grid -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center py-2">
+                                    <small class="text-muted d-block">Date</small>
+                                    <strong>
+                                        {{ attendance.date|date:"l, F d, Y" }}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center py-2">
+                                    <small class="text-muted d-block">
+                                        Bus
+                                    </small>
+                                    <strong>
+                                        {{ attendance.bus.registration }}
+                                    </strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ attendance.bus.route_name }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body text-center py-2">
+                                    <small class="text-muted d-block">
+                                        Assistant
+                                    </small>
+                                    <strong>
+                                        {{ attendance.assistant.name|default:"N/A" }}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timeline -->
+                    <h6 class="mb-3">
+                        <i class="bi bi-clock-history"></i>
+                        Today's Journey
+                    </h6>
+
+                    <div class="timeline">
+                        <!-- Left Home -->
+                        <div class="timeline-item">
+                            <div class="timeline-icon bg-secondary">
+                                <i class="bi bi-house"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">
+                                    Left Home
+                                </h6>
+                                <small class="text-muted">
+                                    {% if attendance.pickup_time %}
+                                        Estimated: {{ attendance.pickup_time|time:"g:i A" }}
+                                    {% else %}
+                                        Not recorded
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Picked Up -->
+                        <div class="timeline-item">
+                            <div class="timeline-icon {% if attendance.pickup_time %}bg-success{% else %}bg-secondary{% endif %}">
+                                <i class="bi bi-bus-front"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">
+                                    Picked Up
+                                </h6>
+                                {% if attendance.pickup_time %}
+                                    <strong class="text-success">
+                                        {{ attendance.pickup_time|time:"g:i A" }}
+                                    </strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ attendance.student.pick_up_location }}
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted">
+                                        Not yet picked up
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Dropped Off -->
+                        <div class="timeline-item">
+                            <div class="timeline-icon {% if attendance.dropoff_time %}bg-info{% else %}bg-secondary{% endif %}">
+                                <i class="bi bi-building"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <h6 class="mb-0">
+                                    Dropped Off
+                                </h6>
+                                {% if attendance.dropoff_time %}
+                                    <strong class="text-info">
+                                        {{ attendance.dropoff_time|time:"g:i A" }}
+                                    </strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ attendance.student.drop_off_location }}
+                                    </small>
+                                {% elif attendance.is_picked_up %}
+                                    <small class="text-warning">
+                                        On the way to school
+                                    </small>
+                                {% else %}
+                                    <small class="text-muted">
+                                        Not yet dropped off
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    {% if attendance.notes %}
+                        <hr>
+                        <h6 class="mb-2">
+                            <i class="bi bi-sticky"></i>
+                            Notes
+                        </h6>
+                        <div class="alert alert-light">
+                            {{ attendance.notes|linebreaks }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Recorded Information -->
+                    <hr>
+                    <div class="row text-muted small">
+                        <div class="col-md-6">
+                            <i class="bi bi-person"></i>
+                            Recorded by: {{ attendance.recorded_by.username|default:"System" }}
+                        </div>
+                        <div class="col-md-6">
+                            <i class="bi bi-clock"></i>
+                            Recorded at: {{ attendance.recorded_at|date:"M d, Y H:i" }}
+                        </div>
+                        {% if attendance.updated_at != attendance.recorded_at %}
+                            <div class="col-12 mt-1">
+                                <i class="bi bi-pencil"></i>
+                                Last modified: {{ attendance.updated_at|date:"M d, Y H:i" }}
+                                by {{ attendance.last_modified_by.username|default:"Unknown" }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Student Information -->
+            <div class="card card-shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-person-badge"></i>
+                        Student Info
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Full Name:</dt>
+                        <dd class="col-sm-7">{{ attendance.student.name }}</dd>
+
+                        <dt class="col-sm-5">Grade:</dt>
+                        <dd class="col-sm-7">{{ attendance.student.grade }}</dd>
+
+                        <dt class="col-sm-5">Parent:</dt>
+                        <dd class="col-sm-7">{{ attendance.student.parent.name }}</dd>
+
+                        <dt class="col-sm-5">Phone:</dt>
+                        <dd class="col-sm-7">{{ attendance.student.parent.phone_number }}</dd>
+
+                        <dt class="col-sm-5">Pickup:</dt>
+                        <dd class="col-sm-7">{{ attendance.student.pick_up_location }}</dd>
+
+                        <dt class="col-sm-5">Dropoff:</dt>
+                        <dd class="col-sm-7">{{ attendance.student.drop_off_location }}</dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="card card-shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Quick Stats
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Records:</span>
+                        <strong>{{ total_records }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Days Present:</span>
+                        <strong class="text-success">
+                            {{ days_present }}
+                        </strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Days Absent:</span>
+                        <strong class="text-danger">
+                            {{ days_absent }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card card-shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'attendance_reports' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-earmark-text"></i> View Reports
+                        </a>
+                        <a href="{% url 'parent_attendance' %}" class="btn btn-outline-success">
+                            <i class="bi bi-person-heart"></i> My Children
+                        </a>
+                        {% if user.user_type == 'admin' %}
+                            <a href="{% url 'edit_attendance' attendance.id %}" class="btn btn-outline-warning">
+                                <i class="bi bi-pencil"></i> Edit Record
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'index' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="card card-shadow mt-4">
+        <div class="card-header bg-white">
+            <h6 class="mb-0">
+                <i class="bi bi-clock-history"></i> Attendance History (Last 30 Records)
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            {% if student_records %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Pickup Time</th>
+                                <th>Dropoff Time</th>
+                                <th>Bus</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in student_records %}
+                                <tr>
+                                    <td>{{ record.date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge
+                                            {% if record.status == 'picked_up' %}bg-success
+                                            {% elif record.status == 'dropped_off' %}bg-info
+                                            {% elif record.status == 'absent' %}bg-danger
+                                            {% elif record.status == 'late' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ record.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if record.pickup_time %}
+                                            {{ record.pickup_time|time:"g:i A" }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.dropoff_time %}
+                                            {{ record.dropoff_time|time:"g:i A" }}
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ record.bus.registration }}</td>
+                                    <td>
+                                        {% if record.notes %}
+                                            <small>{{ record.notes|truncatechars:30 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-clock-history display-4 text-muted"></i>
+                    <p class="text-muted mt-2">No attendance history found.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- CSS for Timeline -->
+    <style>
+        .timeline {
+            position: relative;
+            padding-left: 40px;
+        }
+
+        .timeline:before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #dee2e6;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .timeline-icon {
+            position: absolute;
+            left: -33px;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        .timeline-icon.bg-success {
+            background-color: #198754;
+        }
+
+        .timeline-icon.bg-info {
+            background-color: #0dcaf0;
+        }
+
+        .timeline-icon.bg-secondary {
+            background-color: #6c757d;
+        }
+
+        .timeline-content {
+            padding: 5px 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+
+    <!-- JavaScript to handle status display -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-refresh if status is pending or picked up (not dropped off)
+            const status = '{{ attendance.status }}';
+            if (status === 'pending' || status === 'picked_up') {
+                setTimeout(function() {
+                    location.reload();
+                }, 30000); // Refresh every 30 seconds
+            }
+        });
+    </script>
+{% endblock %}
 
     <!-- JavaScript to handle status display -->
     <script>

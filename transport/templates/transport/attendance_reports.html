@@ -22,34 +22,26 @@
     <div class="card card-shadow mb-4">
         <div class="card-header bg-white">
             <h6 class="mb-0">
-                <i class="bi bi-funnel"></i>
-                Filter Reports
+                <i class="bi bi-funnel"></i> Filter Reports
             </h6>
         </div>
         <div class="card-body">
-            <form method="GET" action="{% url 'attendance_reports' %}" class="row g-3">
+            <!-- ✅ Make sure method is GET and action points to the report view -->
+            <form method="GET" action="{% url 'attendance_reports' %}" class="row g-3" id="reportForm">
                 <div class="col-md-3">
-                    <label class="form-label">
-                        Date From
-                    </label>
+                    <label class="form-label">Date From</label>
                     <input type="date" name="date_from" class="form-control"
-                           value="{{ date_from }}">
+                        value="{{ date_from|default:'' }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">
-                        Date To
-                    </label>
+                    <label class="form-label">Date To</label>
                     <input type="date" name="date_to" class="form-control"
-                           value="{{ date_to }}">
+                        value="{{ date_to|default:'' }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">
-                        Bus
-                    </label>
+                    <label class="form-label">Bus</label>
                     <select name="bus" class="form-select">
-                        <option value="">
-                            All Buses
-                        </option>
+                        <option value="">All Buses</option>
                         {% for bus in buses %}
                             <option value="{{ bus.id }}"
                                     {% if selected_bus|stringformat:"s" == bus.id|stringformat:"s" %}selected{% endif %}>
@@ -59,46 +51,30 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">
-                        Status
-                    </label>
+                    <label class="form-label">Status</label>
                     <select name="status" class="form-select">
-                        <option value="">
-                            All Statuses
-                        </option>
-                        <option value="picked_up" {% if selected_status == 'picked_up' %}selected{% endif %}>
-                            Picked Up
-                        </option>
-                        <option value="dropped_off" {% if selected_status == 'dropped_off' %}selected{% endif %}>
-                            Dropped Off
-                        </option>
-                        <option value="absent" {% if selected_status == 'absent' %}selected{% endif %}>
-                            Absent
-                        </option>
-                        <option value="late" {% if selected_status == 'late' %}selected{% endif %}>
-                            Late
-                        </option>
-                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>
-                            Pending
-                        </option>
+                        <option value="">All Statuses</option>
+                        <option value="picked_up" {% if selected_status == 'picked_up' %}selected{% endif %}>Picked Up</option>
+                        <option value="dropped_off" {% if selected_status == 'dropped_off' %}selected{% endif %}>Dropped Off</option>
+                        <option value="absent" {% if selected_status == 'absent' %}selected{% endif %}>Absent</option>
+                        <option value="late" {% if selected_status == 'late' %}selected{% endif %}>Late</option>
+                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
                     </select>
                 </div>
                 <div class="col-12">
+                    <!-- ✅ Make sure this is a submit button -->
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-search"></i>
-                        Generate Report
+                        <i class="bi bi-search"></i> Generate Report
                     </button>
-                    <button type="reset" class="btn btn-secondary">
-                        <i class="bi bi-arrow-counterclockwise"></i>
-                        Reset
-                    </button>
+                    <a href="{% url 'attendance_reports' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Reset Filters
+                    </a>
                     <button type="button" class="btn btn-success float-end" onclick="exportCSV()">
-                        <i class="bi bi-download"></i>
-                        Export CSV
+                        <i class="bi bi-download"></i> Export CSV
                     </button>
                     <button type="button" class="btn btn-info float-end me-2" onclick="window.print()">
-                        <i class="bi bi-printer"></i>
-                        Print
+                        <i class="bi bi-printer"></i> Print
                     </button>
                 </div>
             </form>
@@ -126,11 +102,7 @@
                         Picked Up
                     </h6>
                     <h3 class="mb-0">
-                        {% for item in status_summary %}
-                            {% if item.status == 'picked_up' or item.status == 'dropped_off' %}
-                                {{ item.count }}
-                            {% endif %}
-                        {% endfor %}
+                        {{ completed }}
                     </h3>
                 </div>
             </div>
@@ -142,11 +114,7 @@
                         Absent
                     </h6>
                     <h3 class="mb-0">
-                        {% for item in status_summary %}
-                            {% if item.status == 'absent' %}
-                                {{ item.count }}
-                            {% endif %}
-                        {% endfor %}
+                        {{ absent }}
                     </h3>
                 </div>
             </div>
@@ -158,11 +126,7 @@
                         Late
                     </h6>
                     <h3 class="mb-0">
-                        {% for item in status_summary %}
-                            {% if item.status == 'late' %}
-                                {{ item.count }}
-                            {% endif %}
-                        {% endfor %}
+                        {{ late }}
                     </h3>
                 </div>
             </div>
@@ -234,6 +198,7 @@
                                 <th>Route</th>
                                 <th>Total Records</th>
                                 <th>Picked Up</th>
+                                <th>Dropped Off</th>
                                 <th>Absent</th>
                                 <th>Late</th>
                                 <th>Pending</th>
@@ -251,28 +216,34 @@
                                     </td>
                                     <td>
                                         <strong>
-                                            {{ item.count }}
+                                            {{ item.total }}
                                         </strong>
                                     </td>
                                     <td>
                                         <span class="badge bg-success">
                                             <!-- Calculate picked up count for this bus -->
-                                            {{ item.count }}
+                                            {{ item.picked_up_count }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            <!-- Calculate picked up count for this bus -->
+                                            {{ item.dropped_off_count }}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-danger">
-                                            {{ item.count|divisibleby:2|yesno:"0,0" }}
+                                            {{ item.absent_count }}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-warning">
-                                            {{ item.count|divisibleby:3|yesno:"0,0" }}
+                                            {{ item.late_count }}
                                         </span>
                                     </td>
                                     <td>
                                         <span class="badge bg-secondary">
-                                            {{ item.count|divisibleby:4|yesno:"0,0" }}
+                                            {{ item.pending_count }}
                                         </span>
                                     </td>
                                 </tr>
@@ -316,19 +287,22 @@
                                     </td>
                                     <td>
                                         <strong>
-                                            {{ item.count }}
+                                            {{ item.total }}
                                         </strong>
                                     </td>
                                     <td>
                                         <!-- Show status breakdown for this date -->
                                         <span class="badge bg-success">
-                                            Picked Up: {{ item.count }}
+                                            Picked Up: {{ item.picked_up_count }}
+                                        </span>
+                                        <span class="badge bg-info">
+                                            Dropped Off: {{ item.dropped_off_count }}
                                         </span>
                                         <span class="badge bg-danger">
-                                            Absent: 0
+                                            Absent: {{ item.absent_count }}
                                         </span>
                                         <span class="badge bg-warning">
-                                            Late: 0
+                                            Late: {{ item.late_count }}
                                         </span>
                                     </td>
                                 </tr>
@@ -495,10 +469,11 @@
             <i class="bi bi-speedometer2"></i>
             Dashboard
         </a>
-        <a href="{% url 'attendance_reports' %}" class="btn btn-outline-primary">
-            <i class="bi bi-arrow-clockwise"></i>
-            Reset Filters
+        <a href="{% url 'manage_system' %}" class="btn btn-outline-primary">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            Management Hub
         </a>
+
     </div>
 
     <!-- JavaScript -->
