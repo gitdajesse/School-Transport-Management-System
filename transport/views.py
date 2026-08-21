@@ -1115,11 +1115,12 @@ def send_notification(recipient, notification_type, subject, message, delivery_m
             delivery_method = delivery_method,
             subject = subject,
             message = message,
-            is_automatic = True
+            is_automatic = True,
+            delivered = True,
+            read = False
         )
-
-        notification.mark_as_delivered()
         return notification
+
     except Exception as e:
         print(f"Error sending notification: {e}")
         return None
@@ -1259,22 +1260,27 @@ def notify_parents_about_new_bus(student, bus):
 
 
 @login_required
-def notification_list(request):
-    """ View all notifications for the current user """
-    notifications = Notification.object.filter(recipient = request.user).order_by('-created_at')
+def parent_notifications(request):
+    """ View for parent to see their notifications """
+    if request.user.user_type != 'parent':
+        messages.error(request, 'Access denied.')
+        return redirect('index')
+
+    notifications = Notification.objects.filter(recipient = request.user).order_by('-created_at')
 
     # Mark all as read
-    unread = notifications.filter(read = False)
-    for notif in unread:
-        notif.mark_as_read()
+    unread_count = notifications.filter(read = False).count()
+    total_count = notifications.count()
+    read_count = total_count - unread_count
 
     context = {
-        'notifiactions': notifications,
-        'unread_count': unread.count(),
-        'total_count': notifications.count(),
+        'notifications': notifications,
+        'unread_count': unread_count,
+        'read_count': read_count,
+        'total_count': total_count
     }
 
-    return render(request, 'transport/notification_list.html', context)
+    return render(request, 'transport/parent_notifications.html', context)
 
 
 @login_required
@@ -1283,7 +1289,8 @@ def notification_detail(request, notification_id):
     notification = get_object_or_404(Notification, id = notification_id, recipient = request.user)
 
     if not notification.read:
-        notification.mark_as_read()
+        notification.read = True
+        notification.save()
 
     context = {
         'notification': notification
@@ -1295,10 +1302,26 @@ def notification_detail(request, notification_id):
 @login_required
 def mark_all_notifications_read(request):
     """ Mark all notifications as read """
-    Notification.objects.filter(recipoent = request.user, read = False).update(read = True)
-    messages.success(request, 'All notifications marked as read.')
-    return redirect('notification_list')
+    if request.user.user_type != 'parent':
+        messages.error(request, 'Access denied.')
+        return redirect('index')
 
+    updated = Notification.objects.filter(recipient = request.user, read = False).update(read = True)
+
+    messages.success(request, f'All notifications marked as read ({updated} updated).')
+    return redirect('parent_notifications')
+
+
+@login_required
+def mark_notification_read(request, notification_id):
+    """ Mark a single notification as read. """
+    notification = get_object_or_404(Notification, id = notification_id, recipient = request.user)
+
+    notification.read = True
+    notification.save()
+
+    messages.success(request, 'Notification marked as read.')
+    return redirect('parent_notifications')
 
 @login_required
 def manage_attendance(request):
@@ -1463,6 +1486,7 @@ def mark_attendance(request):
             attendance.last_modified_by = request.user
             attendance.save()
 
+            send_pickup_notification(student, attendance)
             message = f"{student.name} marked as picked up"
 
         elif action == 'dropoff':
@@ -1477,6 +1501,7 @@ def mark_attendance(request):
             attendance.last_modified_by = request.user
             attendance.save()
 
+            send_dropoff_notification(student, attendance)
             message = f"{student.name} marked as dropped off"
 
         elif action == 'absent':
@@ -1487,6 +1512,7 @@ def mark_attendance(request):
             attendance.last_modified_by = request.user
             attendance.save()
 
+            send_absent_notification(student, attendance)
             message = f"{student.name} marked as absent"
 
         elif action == 'late':
@@ -1498,22 +1524,13 @@ def mark_attendance(request):
             attendance.last_modified_by = request.user
             attendance.save()
 
+            send_late_notification(student, attendance)
             message = f"{student.name} marked as late"
 
         else:
             return JsonResponse({
                 'error': 'Invalid action'}, status = 400
                 )
-
-        # Trigger notifications
-        if action == 'pickup':
-            send_pickup_notification(student, attendance)
-        elif action == 'dropoff':
-            send_dropoff_notification(student, attendance)
-        elif action == 'absent':
-            send_absent_notification(student, attendance)
-        elif action == 'late':
-            send_late_notification(student, attendance)
 
         return JsonResponse({
             'success': True,
@@ -1965,96 +1982,149 @@ def edit_attendance(request, attendance_id):
 
 def send_pickup_notification(student, attendance):
     """ Send notification to parent when student is picked up """
-    parent = student.parent
-    if not parent:
-        return
+    try:
+        parent = student.parent
 
-    message = f"""
-    {student.name} has been picked up!
+        if not parent:
+            print(f"No parent found for student: {student.name}")
+            return
 
-    Time: {attendance.pickup_time.strftime('%I:%M %p')}
-    Bus: {student.bus.registration}
-    Route: {student.bus.route_name}
-    """
+        if not parent.user:
+            print(f"No user found for parent: {parent.name}")
+            return
 
-    # Send in-app notification
-    Notification.objects.create(
-        recipient = parent.user,
-        notification_type = 'attendance',
-        delivery_method = 'app',
-        subject = f'{student.name} Picked up',
-        message = message,
-        is_automatic = True
-    )
+        message = f"""
+        {student.name} has been picked up!
+
+        Time: {attendance.pickup_time.strftime('%I:%M %p')}
+        Bus: {student.bus.registration}
+        Pickup Location: {student.pick_up_location}
+
+        Your child is on the way to school.
+        """
+
+        # Send in-app notification
+        Notification.objects.create(
+            recipient = parent.user,
+            notification_type = 'attendance',
+            delivery_method = 'app',
+            subject = f'{student.name} Picked up',
+            message = message,
+            is_automatic = True,
+            delivered = True
+        )
+        print(f"Pickup notification sent to {parent.user.username}")
+
+    except Exception as e:
+        print(f"Error sending pickup notification: {e}")
 
 
 def send_dropoff_notification(student, attendance):
     """ Send notification to parent when student is dropped off """
-    parent = student.parent
-    if not parent:
-        return
+    try:
+        parent = student.parent
 
-    message = f"""
-    {student.name} has arrived at school!
+        if not parent:
+            print(f"No parent found for student: {student.name}")
+            return
 
-    Time: {attendance.dropoff_time.strftime('%I:%M %p')}
-    Bus: {student.bus.registration}
-    """
+        if not parent.user:
+            print(f"No user found for parent: {parent.name}")
+            return
 
-    Notification.objects.create(
-        recipient = parent.user,
-        notification_type = 'attendance',
-        delivery_method = 'app',
-        subject = f'{student.name} Arrived at School',
-        message = message,
-        is_automatic = True
-    )
+        message = f"""
+        {student.name} has arrived at school!
+
+        Time: {attendance.dropoff_time.strftime('%I:%M %p')}
+        Bus: {student.bus.registration} - {student.bus.route_name}
+        Dropoff Location: {student.drop_off_location}
+
+        Your child has safely arrived.
+        """
+
+        Notification.objects.create(
+            recipient = parent.user,
+            notification_type = 'attendance',
+            delivery_method = 'app',
+            subject = f'{student.name} Arrived at School',
+            message = message,
+            is_automatic = True,
+            delivered = True
+        )
+        print(f"Dropoff notification sent to {parent.user.username}")
+
+    except Exception as e:
+        print(f"Error sending dropoff notification: {e}")
 
 
 def send_absent_notification(student, attendance):
     """ Send notification to parent when student is absent """
-    parent = student.parent
-    if not parent:
-        return
+    try:
+        parent = student.parent
+        if not parent :
+            print(f"No parent found for student: {student.name}")
+            return
 
-    message = f"""
-    {student.name} was marked absent today.
+        if not parent.user:
+            print(f"No user found for parent: {parent.name}")
+            return
 
-    Date: {attendance.date}
-    Please contact the school for more information.
-    """
+        message = f"""
+        {student.name} was marked absent today.
 
-    Notification.objects.create(
-        recipient = parent.user,
-        notification_type = 'attendance',
-        delivery_method = 'app',
-        subject = f'{student.name} Absent Today',
-        message = message,
-        is_automatic = True
-    )
+        Date: {attendance.date.strftime('%A, %B %d, %Y')}
+        Please contact the school for more information.
+        """
+
+        Notification.objects.create(
+            recipient = parent.user,
+            notification_type = 'attendance',
+            delivery_method = 'app',
+            subject = f'{student.name} Absent Today',
+            message = message,
+            is_automatic = True,
+            delivered = True,
+            read = False
+        )
+        print(f"Absent notification sent to {parent.user.username}")
+
+    except Exception as e:
+        print(f"Error sending absent notification: {e}")
 
 
 def send_late_notification(student, attendance):
     """ Send notification to parent when student is late """
-    parent = student.parent
-    if not parent:
-        return
+    try:
+        parent = student.parent
 
-    message = f"""
-    {student.name} was late today.
+        if not parent:
+            print(f"No parent found for student: {student.name}")
+            return
 
-    Time: {attendance.pickup_time.strftime('%I:%M %p')}
-    Please ensure your child is ready earlier tomorrow.
-    """
+        if not parent.user:
+            print(f"No user found for parent: {parent.name}")
+            return
 
-    Notification.objects.create(
-        recipient = parent.user,
-        notification_type = 'attendance',
-        delivery_method = 'app',
-        subject = f'{student.name} Late Today',
-        message = message,
-        is_automatic = True
-    )
+        message = f"""
+        {student.name} was late today.
+
+        Time: {attendance.pickup_time.strftime('%I:%M %p')}
+        Please ensure your child is ready earlier tomorrow.
+        """
+
+        Notification.objects.create(
+            recipient = parent.user,
+            notification_type = 'attendance',
+            delivery_method = 'app',
+            subject = f'{student.name} Late Today',
+            message = message,
+            is_automatic = True,
+            delivered = True
+        )
+        print(f" Late notification sent to {parent.user.username}")
+
+    except Exception as e:
+        print(f"Error sending late notification: {e}")
 
 
 @login_required
@@ -2636,3 +2706,40 @@ def reactivate_assistant(request, assistant_id):
     }
 
     return render(request, 'transport/confirm_reactivate_assistant.html', context)
+
+
+@login_required
+def student_attendance_history(request, student_id):
+    """ View full attendance history for a soecific student. """
+    student = get_object_or_404(Student, id = student_id)
+
+    # Check permissions
+    if request.user.user_type == 'parent':
+        try:
+            parent = request.user.parent_profile
+            if student not in parent.children.all():
+                messages.error(request, 'Access denied. This is not your child.')
+                return redirect('parent_attendance')
+        except Parent.DoesNotExist:
+            messages.error(request, 'Parent profile not found.')
+            return redirect('index')
+
+    # Get all attendance records for this student
+    records = student.attendance_records.all().order_by('-date')
+
+    # Calculate statistics
+    total_records = records.count()
+    present_count = records.filter(status__in = ['picked_up', 'dropped_off']).count()
+    absent_count = records.filter(status = 'absent').count()
+    late_count = records.filter(status = 'late').count()
+
+    context = {
+        'student': student,
+        'records': records,
+        'total_records': total_records,
+        'present_count': present_count,
+        'absent_count': absent_count,
+        'late_count': late_count
+    }
+
+    return render(request, 'transport/student_attendance_history.html', context)

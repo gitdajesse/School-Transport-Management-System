@@ -31,4 +31,13 @@
             You haven't registered any children yet.
         </p>
     {% endif %}
+
+    <div class="mb-3">
+        <a href="{% url 'parent_notifications' %}" class="btn btn-info">
+            <i class="bi bi-bell"></i> View Notifications
+            {% if unread_count > 0 %}
+                <span class="badge bg-danger">{{ unread_count }}</span>
+            {% endif %}
+        </a>
+    </div>
 {% endblock %}

@@ -1,73 +1,84 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}Notification Details{% endblock %}
+{% block title %}Notification - {{ notification.subject }}{% endblock %}
 
 {% block body %}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="page-title mb-0">
-            <i class="bi bi-envelope-open"></i>
-            Notification Details
+            <i class="bi bi-envelope-open"></i> Notification Details
         </h1>
-        <a href="{% url 'notification_list' %}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i>
-            Back to Notifications
-        </a>
+        <div>
+            <a href="{% url 'parent_notifications' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Notifications
+            </a>
+        </div>
     </div>
 
     <div class="card card-shadow">
         <div class="card-header bg-white">
             <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    {{ notification.subject }}</h5>
+                <h5 class="mb-0">{{ notification.subject }}</h5>
                 <div>
                     <span class="badge
-                        {% if notification.notification_type == 'attendance' %}bg-info
+                        {% if notification.notification_type == 'attendance' %}bg-success
                         {% elif notification.notification_type == 'fee' %}bg-warning
                         {% elif notification.notification_type == 'route' %}bg-primary
-                        {% elif notification.notification_type == 'bus' %}bg-success
+                        {% elif notification.notification_type == 'bus' %}bg-info
+                        {% elif notification.notification_type == 'system' %}bg-danger
                         {% else %}bg-secondary{% endif %}">
                         {{ notification.get_notification_type_display }}
                     </span>
                     {% if notification.read %}
-                        <span class="badge bg-secondary">
-                            Read
-                        </span>
+                        <span class="badge bg-secondary">Read</span>
                     {% else %}
-                        <span class="badge bg-danger">
-                            Unread
-                        </span>
+                        <span class="badge bg-danger">Unread</span>
                     {% endif %}
                 </div>
             </div>
         </div>
         <div class="card-body">
             <div class="mb-3">
-                <small class="text-muted">
-                    <i class="bi bi-clock"></i>
-                    Received: {{ notification.created_at|date:"F d, Y H:i" }}
-                    ({{ notification.created_at|timesince }} ago)
-                </small>
-                <br>
-                <small class="text-muted">
-                    <i class="bi bi-envelope"></i>
-                    Delivery: {{ notification.get_delivery_method_display }}
-                </small>
-                <br>
-                <small class="text-muted">
-                    <i class="bi bi-{% if notification.delivered %}check-circle{% else %}clock{% endif %}"></i>
-                    Status: {% if notification.delivered %}Delivered{% else %}Pending{% endif %}
-                </small>
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="bi bi-clock"></i>
+                            Received: {{ notification.created_at|date:"F d, Y H:i" }}
+                            ({{ notification.created_at|timesince }} ago)
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        <small class="text-muted">
+                            <i class="bi bi-envelope"></i>
+                            Delivery: {{ notification.get_delivery_method_display }}
+                        </small>
+                    </div>
+                    {% if notification.sent_at %}
+                        <div class="col-12">
+                            <small class="text-muted">
+                                <i class="bi bi-send"></i>
+                                Sent: {{ notification.sent_at|date:"F d, Y H:i" }}
+                            </small>
+                        </div>
+                    {% endif %}
+                </div>
             </div>
 
-            <div class="alert alert-light">
+            <div class="alert alert-light border">
                 {{ notification.message|linebreaks }}
             </div>
         </div>
         <div class="card-footer bg-white">
-            <div class="d-flex gap-2">
-                <a href="{% url 'notification_list' %}" class="btn btn-secondary">
-                    <i class="bi bi-list"></i>
-                    All Notifications
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'parent_notifications' %}" class="btn btn-secondary">
+                    <i class="bi bi-list"></i> All Notifications
+                </a>
+                {% if not notification.read %}
+                    <a href="{% url 'mark_notification_read' notification.id %}" class="btn btn-success">
+                        <i class="bi bi-check-lg"></i> Mark as Read
+                    </a>
+                {% endif %}
+                <a href="{% url 'parent_dashboard' %}" class="btn btn-primary">
+                    <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
             </div>
         </div>

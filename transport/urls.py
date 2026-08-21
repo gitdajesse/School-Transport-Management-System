@@ -42,9 +42,10 @@ urlpatterns = [
     path('stops/delete/<int:stop_id>/', views.delete_stop, name = 'delete_stop'),
 
     # Notification management URLs
-    path('notifications/', views.notification_list, name = 'notification_list'),
+    path('notifications/', views.parent_notifications, name = 'parent_notifications'),
     path('notifications/detail/<int:notification_id>/', views.notification_detail, name = 'notification_detail'),
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name = 'mark_all_notifications_read'),
+    path('notifications/mark-read/<int:notification_id>/', views.mark_notification_read, name = 'mark_notification_read'),
 
     # Attendance managemnt URLs
     path('manage-attendance/', views.manage_attendance, name = 'manage_attendance'),
@@ -54,6 +55,7 @@ urlpatterns = [
     path('manage-payment/', views.manage_payment, name = 'manage_payment'),
     path('attendance/parent/', views.parent_attendance, name = 'parent_attendance'),
     path('attendance/admin/', views.admin_attendance_dashboard, name = 'admin_attendance_dashboard'),
+    path('attendance/history/<int:student_id>/', views.student_attendance_history, name = 'student_attendance_history'),
     path('attendance/detail/<int:attendance_id>/', views.attendance_detail, name = 'attendance_detail'),
     path('attendance/reports/', views.attendance_reports, name = 'attendance_reports'),
     path('attendance/edit/<int:attendance_id>/', views.edit_attendance, name = 'edit_attendance'),

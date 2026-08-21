@@ -1,0 +1,163 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}My Notifications{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-bell"></i> My Notifications
+            {% if unread_count > 0 %}
+                <span class="badge bg-danger ms-2">{{ unread_count }}</span>
+            {% endif %}
+        </h1>
+        <div>
+            {% if notifications %}
+                <a href="{% url 'mark_all_notifications_read' %}" class="btn btn-outline-secondary me-2">
+                    <i class="bi bi-check-all"></i> Mark All Read
+                </a>
+            {% endif %}
+            <a href="{% url 'parent_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">Total</h6>
+                    <h3 class="mb-0">{{ total_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">Read</h6>
+                    <h3 class="mb-0">{{ read_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center py-2">
+                    <h6 class="mb-0">Unread</h6>
+                    <h3 class="mb-0">{{ unread_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification List -->
+    <div class="card card-shadow">
+        <div class="card-body p-0">
+            {% if notifications %}
+                <div class="list-group list-group-flush">
+                    {% for notification in notifications %}
+                        <div class="list-group-item {% if not notification.read %}list-group-item-primary border-start border-4 border-primary{% endif %}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="badge
+                                            {% if notification.notification_type == 'attendance' %}bg-success
+                                            {% elif notification.notification_type == 'fee' %}bg-warning
+                                            {% elif notification.notification_type == 'route' %}bg-primary
+                                            {% elif notification.notification_type == 'bus' %}bg-info
+                                            {% elif notification.notification_type == 'system' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            <i class="bi
+                                                {% if notification.notification_type == 'attendance' %}bi-check-circle
+                                                {% elif notification.notification_type == 'fee' %}bi-credit-card
+                                                {% elif notification.notification_type == 'route' %}bi-route
+                                                {% elif notification.notification_type == 'bus' %}bi-bus-front
+                                                {% elif notification.notification_type == 'system' %}bi-gear
+                                                {% else %}bi-bell{% endif %}">
+                                            </i>
+                                            {{ notification.get_notification_type_display }}
+                                        </span>
+                                        {% if not notification.read %}
+                                            <span class="badge bg-danger">New</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <h6 class="mb-1 mt-2">
+                                        <a href="{% url 'notification_detail' notification.id %}"
+                                           class="text-decoration-none {% if not notification.read %}fw-bold{% endif %}">
+                                            {{ notification.subject }}
+                                        </a>
+                                    </h6>
+                                    <p class="text-muted mb-1">{{ notification.message|truncatechars:200 }}</p>
+                                    <div class="d-flex gap-3 flex-wrap">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock"></i>
+                                            {{ notification.created_at|timesince }} ago
+                                        </small>
+                                        <small class="text-muted">
+                                            <i class="bi bi-envelope"></i>
+                                            {{ notification.get_delivery_method_display }}
+                                        </small>
+                                        {% if notification.delivered %}
+                                            <small class="text-success">
+                                                <i class="bi bi-check-circle"></i> Delivered
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="ms-3">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'notification_detail' notification.id %}"
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'mark_notification_read' notification.id %}"
+                                           class="btn btn-outline-success">
+                                            <i class="bi bi-check-lg"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <div class="display-1 text-muted mb-3">
+                        <i class="bi bi-bell-slash"></i>
+                    </div>
+                    <h5 class="text-muted">No Notifications</h5>
+                    <p class="text-muted">You're all caught up!</p>
+                    <a href="{% url 'parent_dashboard' %}" class="btn btn-primary">
+                        <i class="bi bi-speedometer2"></i> Go to Dashboard
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-4">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'parent_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a href="{% url 'parent_attendance' %}" class="btn btn-outline-primary">
+                <i class="bi bi-clipboard-check"></i> Attendance
+            </a>
+            <button onclick="location.reload()" class="btn btn-outline-info">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Auto-refresh for new notifications -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Refresh every 60 seconds to check for new notifications
+            setTimeout(function() {
+                location.reload();
+            }, 60000);
+        });
+    </script>
+{% endblock %}
