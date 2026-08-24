@@ -1110,7 +1110,7 @@ def send_notification(recipient, notification_type, subject, message, delivery_m
     """ Helper function to create and send a notification """
     try:
         notification = Notification.objects.create(
-            recipent = recipient,
+            recipient = recipient,
             notification_type = notification_type,
             delivery_method = delivery_method,
             subject = subject,
@@ -1203,7 +1203,7 @@ def notify_parents_about_new_student(student):
     message = f"""
     Dear {parent.name},
 
-    This is to confirm that your chikd {student.name} has been successfully registered in the School Transport Management System.
+    This is to confirm that your child {student.name} has been successfully registered in the School Transport Management System.
 
     Student Details:
     - Name: {student.name}
