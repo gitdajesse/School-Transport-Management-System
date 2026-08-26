@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils import timezone
+from datetime import datetime, timedelta
 
 # Create your models here.
 class User(AbstractUser):
@@ -300,3 +301,106 @@ class Stop(models.Model):
 
     def __str__(self):
         return f"{self.route.name} - Stop {self.order}: {self.name}"
+
+
+class Fee(models.Model):
+    """ Fee record for a student for a specific term """
+
+    TERM_CHOICES = (
+        ('January', 'January Term'),
+        ('April', 'April Term'),
+        ('August', 'August Term'),
+    )
+
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('partial', 'Partially Paid'),
+        ('paid', 'Paid'),
+        ('overdue', 'Overdue'),
+        ('waived', 'Waived'),
+    )
+
+    student = models.ForeignKey(Student, on_delete = models.CASCADE, related_name = 'fees')
+    term = models.CharField(max_length = 20, choices = TERM_CHOICES)
+    year = models.IntegerField()
+    amount = models.DecimalField(max_digits = 10, decimal_places = 2)
+    due_date = models.DateField()
+
+    status = models.CharField(max_length = 20, choices = STATUS_CHOICES, default = 'pending')
+    paid_amount = models.DecimalField(max_digits = 10, decimal_places = 2, default = 0.00)
+    balance = models.DecimalField(max_digits = 10, decimal_places = 2, default = 0.00)
+
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    paid_at = models.DateTimeField(null = True, blank = True)
+
+    notes = models.TextField(blank = True, null = True)
+
+    class Meta:
+        unique_together = ['student', 'term', 'year']
+        ordering = ['-year', '-term']
+        indexes = [
+            models.Index(fields = ['student', 'status']),
+            models.Index(fields = ['due_date', 'status'])
+        ]
+
+    def __str__(self):
+        return f"{self.student.name} - {self.term} {self.year} - {self.status}"
+
+    def save(self, *args, **kwargs):
+        """ Calculate balance before saving """
+        self.balance = self.amount - self.paid_amount
+        if self.balance <= 0 and self.paid_amount > 0:
+            self.status = 'paid'
+            if not self.paid_at:
+                self.paid_at = timezone.now()
+        elif self.paid_amount > 0 and self.paid_amount < self.amount:
+            self.status = 'partial'
+        elif self.due_date and timezone.now().date() > self.due_date and self.paid_amount == 0:
+            self.status = 'overdue'
+        super().save(*args, **kwargs)
+
+    def is_paid(self):
+        return self.status == 'paid'
+
+    def is_overdue(self):
+        return self.status == 'overdue' or (self.due_date and timezone.now().date() > self.due_date and not self.is_paid())
+
+    def get_balance_due(self):
+        return self.amount - self.paid_amount
+
+    def get_payment_percentage(self):
+        if self.amount > 0:
+            return (self.paid_amount / self.amount) * 100
+        return 0
+
+
+class Payment(models.Model):
+    """ Payment record for a fee """
+
+    PAYMENT_METHODS = (
+        ('mpesa', 'M-PESA'),
+        ('cash', 'Cash'),
+        ('bank_transfer', 'Bank Transfer'),
+        ('cheque', 'Cheque'),
+        ('other', 'Other'),
+    )
+
+    fee = models.ForeignKey(Fee, on_delete = models.CASCADE, related_name = 'payments')
+    amount = models.DecimalField(max_digits = 10, decimal_places = 2)
+    payment_method = models.CharField(max_length = 20, choices = PAYMENT_METHODS)
+
+    reference_number = models.CharField(max_length = 100, blank = True, null = True)
+    payment_date = models.DateTimeField(default = timezone.now)
+    recorded_by = models.ForeignKey('User', on_delete = models.SET_NULL, null = True, related_name = 'recorded_payments')
+
+    notes = models.TextField(blank = True, null = True)
+
+    created_at = models.DateTimeField(auto_now_add = True)
+
+    class Meta:
+        ordering = ['-payment_date']
+
+    def __str__(self):
+        return f"Payment of {self.fee.student.name} - {self.amount} ({self.payment_method})"
