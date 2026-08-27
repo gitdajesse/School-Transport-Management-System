@@ -47,7 +47,7 @@ urlpatterns = [
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name = 'mark_all_notifications_read'),
     path('notifications/mark-read/<int:notification_id>/', views.mark_notification_read, name = 'mark_notification_read'),
 
-    # Attendance managemnt URLs
+    # Attendance management URLs
     path('manage-attendance/', views.manage_attendance, name = 'manage_attendance'),
     path('attendance/assistant/', views.assistant_attendance, name = 'assistant_attendance'),
     path('attendance/mark/', views.mark_attendance, name = 'mark_attendance'),
@@ -73,5 +73,8 @@ urlpatterns = [
     path('assistants/edit/<int:assistant_id>', views.edit_assistant, name = 'edit_assistant'),
     path('assistants/deactivate/<int:assistant_id>', views.deactivate_assistant, name = 'deactivate_assistant'),
     path('assistants/reactivate/<int:assistant_id>', views.reactivate_assistant, name = 'reactivate_assistant'),
+
+    # Parent fee URLs
+    path('fees/', views.parent_fee_dashboard, name = 'parent_fee_dashboard'),
 ]
 

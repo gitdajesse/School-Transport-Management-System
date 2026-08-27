@@ -4,17 +4,21 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import IntegrityError
 from django.utils import timezone
-from django.db.models import Count, Q
+from django.db.models import Sum, Count, Q
 from datetime import datetime, timedelta
 from django.http import JsonResponse
+from decimal import Decimal
+import calendar
 
-from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop
+from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop, Fee, Payment
+
 
 # Create your views here.
 def index(request):
     """ Home page - redirects to appropraite dashboard if logged in """
 
     return render (request, 'transport/index.html')
+
 
 def register(request):
     """ Handle user registration """
@@ -130,6 +134,7 @@ def register(request):
     # Get request
     return render(request, 'transport/register.html')
 
+
 def login_view(request):
     """ Handles user login """
 
@@ -163,12 +168,14 @@ def login_view(request):
 
     return render (request, 'transport/login.html')
 
+
 def logout_view(request):
     """ Handles user logout """
 
     logout(request)
     messages.info(request, 'You have been logged out successfully')
     return redirect('index')
+
 
 @login_required
 def parent_dashboard(request):
@@ -178,6 +185,7 @@ def parent_dashboard(request):
         return redirect('index')
     else:
         return render (request, 'transport/parent_dashboard.html')
+
 
 @login_required
 def assistant_dashboard(request):
@@ -400,6 +408,7 @@ def student_detail(request, student_id):
     }
 
     return render(request, 'transport/student_detail.html', context)
+    
 
 @login_required
 def edit_student(request, student_id):
@@ -2743,3 +2752,51 @@ def student_attendance_history(request, student_id):
     }
 
     return render(request, 'transport/student_attendance_history.html', context)
+
+
+@login_required
+def parent_fee_dashboard(request):
+    """ Parent's view of their children's fees. """
+    if request.user.user_type != 'parent':
+        messages.error(request, 'Access denied. Only parents can view fees.')
+        return redirect('index')
+
+    try:
+        parent = request.user.parent_profile
+    except Parent.DoesNotExist:
+        messages.error(request, 'Parent profile not found.')
+        return redirect('index')
+
+    # Get all children
+    children = parent.children.filter(is_active = True)
+
+    # Get fee data for each child
+    child_fee_data = []
+    total_balance = Decimal('0.00')
+
+    for child in children:
+        fees = Fee.objects.filter(student = child).order_by('-year', '-term')
+        total_balance += fees.filter(status__in = ['pending', 'partial', 'overdue']).aggregate(total_balance = Sum('balance'))['total_balance'] or Decimal('0.00')
+
+        # Get latest fee status
+        latest_fee = fees.first()
+
+        child_fee_data.append({
+            'student': child,
+            'latest_fee': latest_fee,
+            'fees': fees,
+            'total_fees': fees.count(),
+            'unpaid_fees': fees.filter(status__in = ['pending', 'partial', 'overdue']).count(),
+        })
+
+    # Get recent payment
+    payments = Payment.objects.filter(fee__student__parent = parent).order_by('-payment_date')[:10]
+
+    context = {
+        'children': child_fee_data,
+        'total_balance': total_balance,
+        'payments': payments,
+        'parent': parent,
+    }
+
+    return render(request, 'transport/parent_fee_dashboard.html', context)

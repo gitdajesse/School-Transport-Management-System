@@ -1,0 +1,138 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}My Transport Fees{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-credit-card"></i> My Transport Fees
+        </h1>
+        <div>
+            <a href="{% url 'manage_payment' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Management Hub
+            </a>
+        </div>
+    </div>
+
+    <!-- Total Balance -->
+    <div class="card bg-primary text-white mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0">Total Balance Due</h5>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h2 class="mb-0">${{ total_balance|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Children's Fees -->
+    {% for child in children %}
+        <div class="card card-shadow mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-person-fill text-primary"></i>
+                    {{ child.student.name }}
+                    <span class="badge bg-secondary ms-2">{{ child.fees|length }} fees</span>
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                {% if child.fees %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Term</th>
+                                    <th>Amount</th>
+                                    <th>Paid</th>
+                                    <th>Balance</th>
+                                    <th>Due Date</th>
+                                    <th>Status</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fee in child.fees %}
+                                    <tr>
+                                        <td>{{ fee.term }} {{ fee.year }}</td>
+                                        <td>${{ fee.amount|floatformat:2 }}</td>
+                                        <td>${{ fee.paid_amount|floatformat:2 }}</td>
+                                        <td>
+                                            <strong class="{% if fee.get_balance_due > 0 %}text-danger{% else %}text-success{% endif %}">
+                                                ${{ fee.get_balance_due|floatformat:2 }}
+                                            </strong>
+                                        </td>
+                                        <td>{{ fee.due_date|date:"M d, Y" }}</td>
+                                        <td>
+                                            {% include 'includes/fee_status_badge.html' with status=fee.status %}
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'fee_detail' fee.id %}" class="btn btn-outline-info">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if fee.get_balance_due > 0 %}
+                                                    <a href="{% url 'parent_pay_fee' fee.id %}" class="btn btn-outline-success">
+                                                        <i class="bi bi-credit-card"></i> Pay
+                                                    </a>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">No fees for this child.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            You haven't registered any children yet.
+        </div>
+    {% endfor %}
+
+    <!-- Recent Payments -->
+    {% if payments %}
+        <div class="card card-shadow">
+            <div class="card-header bg-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-clock-history"></i> Recent Payments
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                                <tr>
+                                    <td>{{ payment.fee.student.name }}</td>
+                                    <td><strong>${{ payment.amount|floatformat:2 }}</strong></td>
+                                    <td>{{ payment.get_payment_method_display }}</td>
+                                    <td>{{ payment.payment_date|date:"M d, Y" }}</td>
+                                    <td><span class="badge bg-success">Confirmed</span></td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}
