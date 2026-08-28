@@ -408,7 +408,7 @@ def student_detail(request, student_id):
     }
 
     return render(request, 'transport/student_detail.html', context)
-    
+
 
 @login_required
 def edit_student(request, student_id):
@@ -2800,3 +2800,31 @@ def parent_fee_dashboard(request):
     }
 
     return render(request, 'transport/parent_fee_dashboard.html', context)
+
+
+@login_required
+def fee_detail(request, fee_id):
+    """ View details of a specific fee. """
+    fee = get_object_or_404(Fee, id = fee_id)
+
+    # Check permissions
+    if request.user.user_type == 'parent':
+        try:
+            parent = request.user.parent_profile
+            if fee.student not in parent.children.all():
+                messages.error(request, 'Access denied. This is not your child.')
+                return redirect('parent_fee_dashboard')
+        except Parent.DoesNotExist:
+                messages.error(request, 'Parent profile not found.')
+                return redirect('index')
+
+    # Get payments for this fee
+    payments = fee.payments.all().order_by('-payment_date')
+
+    context = {
+        'fee': fee,
+        'payments': payments,
+        'balance_due': fee.get_balance_due()
+    }
+
+    return render(request, 'transport/fee_detail.html', context)

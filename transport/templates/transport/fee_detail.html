@@ -1,0 +1,300 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Fee Details - {{ fee.student.name }}{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-receipt"></i> Fee Details
+        </h1>
+        <div>
+            {% if user.user_type == 'admin' %}
+                <a href="{% url 'admin_fee_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            {% else %}
+                <a href="{% url 'parent_fee_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Fees
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Fee Information -->
+        <div class="col-lg-6 mb-4">
+            <div class="card card-shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Fee Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Status Badge -->
+                    <div class="text-center mb-3">
+                        {% include 'includes/fee_status_badge.html' with status=fee.status %}
+                    </div>
+
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Student:</dt>
+                        <dd class="col-sm-7">
+                            <a href="{% url 'student_detail' fee.student.id %}">
+                                {{ fee.student.name }}
+                            </a>
+                        </dd>
+
+                        <dt class="col-sm-5">Term:</dt>
+                        <dd class="col-sm-7">{{ fee.term }} {{ fee.year }}</dd>
+
+                        <dt class="col-sm-5">Amount:</dt>
+                        <dd class="col-sm-7">
+                            <strong>${{ fee.amount|floatformat:2 }}</strong>
+                        </dd>
+
+                        <dt class="col-sm-5">Paid Amount:</dt>
+                        <dd class="col-sm-7">
+                            <span class="text-success">
+                                <strong>${{ fee.paid_amount|floatformat:2 }}</strong>
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-5">Balance Due:</dt>
+                        <dd class="col-sm-7">
+                            <span class="{% if balance_due > 0 %}text-danger{% else %}text-success{% endif %}">
+                                <strong>${{ balance_due|floatformat:2 }}</strong>
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-5">Due Date:</dt>
+                        <dd class="col-sm-7">
+                            {{ fee.due_date|date:"l, M d, Y" }}
+                            {% if fee.is_overdue %}
+                                <span class="badge bg-danger ms-2">Overdue</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5">Status:</dt>
+                        <dd class="col-sm-7">
+                            {% include 'includes/fee_status_badge.html' with status=fee.status %}
+                        </dd>
+
+                        <dt class="col-sm-5">Created:</dt>
+                        <dd class="col-sm-7">{{ fee.created_at|date:"M d, Y H:i" }}</dd>
+
+                        <dt class="col-sm-5">Last Updated:</dt>
+                        <dd class="col-sm-7">{{ fee.updated_at|date:"M d, Y H:i" }}</dd>
+
+                        {% if fee.paid_at %}
+                            <dt class="col-sm-5">Paid On:</dt>
+                            <dd class="col-sm-7">{{ fee.paid_at|date:"M d, Y H:i" }}</dd>
+                        {% endif %}
+
+                        {% if fee.notes %}
+                            <dt class="col-sm-5">Notes:</dt>
+                            <dd class="col-sm-7">{{ fee.notes|linebreaks }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Progress -->
+        <div class="col-lg-6 mb-4">
+            <div class="card card-shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Payment Progress
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h4 class="mb-0">
+                            <span class="text-success">${{ fee.paid_amount|floatformat:2 }}</span>
+                            <span class="text-muted">/</span>
+                            <span>${{ fee.amount|floatformat:2 }}</span>
+                        </h4>
+                        <small class="text-muted">Paid / Total</small>
+                    </div>
+
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar
+                            {% if fee.get_payment_percentage == 100 %}bg-success
+                            {% elif fee.get_payment_percentage > 50 %}bg-info
+                            {% elif fee.get_payment_percentage > 0 %}bg-warning
+                            {% else %}bg-danger{% endif %}"
+                             role="progressbar"
+                             style="width: {{ fee.get_payment_percentage|floatformat:0 }}%;"
+                             aria-valuenow="{{ fee.get_payment_percentage|floatformat:0 }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            {{ fee.get_payment_percentage|floatformat:0 }}%
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-2">
+                        <small class="text-muted">
+                            {% if fee.is_paid %}
+                                ✅ Fully Paid
+                            {% elif fee.is_overdue %}
+                                ⚠️ Overdue - Please pay immediately
+                            {% else %}
+                                💳 Pending Payment
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <!-- Payment Actions -->
+                    {% if balance_due > 0 %}
+                        <div class="d-grid gap-2 mt-3">
+                            {% if user.user_type == 'parent' %}
+                                <a href="{% url 'parent_pay_fee' fee.id %}" class="btn btn-success">
+                                    <i class="bi bi-credit-card"></i> Pay Now
+                                </a>
+                            {% elif user.user_type == 'admin' %}
+                                <a href="{% url 'record_payment' fee.id %}" class="btn btn-success">
+                                    <i class="bi bi-credit-card"></i> Record Payment
+                                </a>
+                                <a href="{% url 'waive_fee' fee.id %}" class="btn btn-warning">
+                                    <i class="bi bi-check-circle"></i> Waive Fee
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="card card-shadow">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-clock-history"></i> Payment History
+                <span class="badge bg-primary ms-2">{{ payments|length }}</span>
+            </h6>
+            {% if user.user_type == 'admin' and balance_due > 0 %}
+                <a href="{% url 'record_payment' fee.id %}" class="btn btn-sm btn-success">
+                    <i class="bi bi-credit-card"></i> Record Payment
+                </a>
+            {% endif %}
+        </div>
+        <div class="card-body p-0">
+            {% if payments %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Reference</th>
+                                <th>Date</th>
+                                <th>Recorded By</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <strong class="text-success">
+                                            ${{ payment.amount|floatformat:2 }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ payment.get_payment_method_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if payment.reference_number %}
+                                            <code>{{ payment.reference_number }}</code>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ payment.payment_date|date:"M d, Y H:i" }}</td>
+                                    <td>
+                                        {% if payment.recorded_by %}
+                                            {{ payment.recorded_by.username }}
+                                        {% else %}
+                                            <span class="text-muted">System</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if payment.notes %}
+                                            <small>{{ payment.notes|truncatechars:30 }}</small>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="1"><strong>Total Paid</strong></td>
+                                <td><strong class="text-success">${{ fee.paid_amount|floatformat:2 }}</strong></td>
+                                <td colspan="5"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-clock-history display-4 text-muted"></i>
+                    <p class="text-muted mt-2">No payments recorded for this fee yet.</p>
+                    {% if balance_due > 0 %}
+                        {% if user.user_type == 'parent' %}
+                            <a href="{% url 'parent_pay_fee' fee.id %}" class="btn btn-primary">
+                                <i class="bi bi-credit-card"></i> Make First Payment
+                            </a>
+                        {% elif user.user_type == 'admin' %}
+                            <a href="{% url 'record_payment' fee.id %}" class="btn btn-primary">
+                                <i class="bi bi-credit-card"></i> Record First Payment
+                            </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-4">
+        <div class="d-flex gap-2 flex-wrap">
+            {% if user.user_type == 'parent' %}
+                <a href="{% url 'parent_fee_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-credit-card"></i> All Fees
+                </a>
+                <a href="{% url 'parent_dashboard' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            {% else %}
+                <a href="{% url 'admin_fee_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-credit-card"></i> Fee Dashboard
+                </a>
+                <a href="{% url 'fee_reports' %}" class="btn btn-outline-info">
+                    <i class="bi bi-file-earmark-text"></i> Reports
+                </a>
+            {% endif %}
+            <button onclick="location.reload()" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript for auto-refresh if fee is pending/overdue -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const status = '{{ fee.status }}';
+            if (status === 'pending' || status === 'overdue' || status === 'partial') {
+                // Refresh every 30 seconds to check for status updates
+                setTimeout(function() {
+                    location.reload();
+                }, 30000);
+            }
+        });
+    </script>
+{% endblock %}
