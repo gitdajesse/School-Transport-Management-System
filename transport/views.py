@@ -2828,3 +2828,73 @@ def fee_detail(request, fee_id):
     }
 
     return render(request, 'transport/fee_detail.html', context)
+
+
+@login_required
+def parent_pay_fee(request, fee_id):
+    """ Initiate payment for a fee (parent view) """
+    if request.user.user_type != 'parent':
+        messages.error(request, 'Access denied.')
+        return redirect('index')
+
+    fee = get_object_or_404(Fee, id = fee_id)
+    parent = request.user.parent_profile
+
+    # Verify parent owns this student
+    if fee.student not in parent.children.all():
+        messages.error(request, 'Access denied. This is not your child.')
+        return redirect('parent_fee_dashboard')
+
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        payment_method = request.POST.get('payment_method')
+        reference_number = request.POST.get('reference_number', '')
+        notes = request.POST.get('notes', '')
+
+        try:
+            amount = Decimal(amount)
+            if amount <= 0:
+                messages.error(request, 'Payment amount must be greater than zero.')
+                return render(request, 'transport/parent_pay_fee.html', {'fee': fee})
+
+            if amount > fee.get_balance_due():
+                messages.error(request, f'Amount cannot exceed balance due: {fee.get_balance_due()}')
+                return render(request, 'transport/parent_pay_fee.html', {'fee': fee})
+
+            # Create payment
+            payment = Payment.objects.create(
+                fee = fee,
+                amount = amount,
+                payment_method = payment_method,
+                reference_number = reference_number,
+                payment_date = timezone.now(),
+                recorded_by = request.user,
+                notes = notes
+            )
+
+            # Update fee paid amount
+            fee.paid_amount += amount
+            fee.save()
+
+            # Send confirmation notification
+            send_fee_notification(
+                fee.student.parent.user,
+                'payment_confirmation',
+                fee.student,
+                amount,
+                fee
+            )
+
+            messages.success(request, f'Payment of {amount} recorded successfully!')
+            return redirect('fee_detail', fee_id = fee.id)
+
+        except Exception as e:
+            messages.error(request, f'Error processing payment: {str(e)}')
+
+    context = {
+        'fee': fee,
+        'balance_due': fee.get_balance_due()
+    }
+
+    return render(request, 'transport/parent_pay_fee.html', context)
+

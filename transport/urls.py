@@ -77,5 +77,6 @@ urlpatterns = [
     # Parent fee URLs
     path('fees/', views.parent_fee_dashboard, name = 'parent_fee_dashboard'),
     path('fees/detail/<int:fee_id>', views.fee_detail, name = 'fee_detail'),
+    path('fees/pay/<int:fee_id>', views.parent_pay_fee, name = 'parent_pay_fee'),
 ]
 
