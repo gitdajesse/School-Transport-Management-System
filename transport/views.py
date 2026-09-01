@@ -2898,3 +2898,77 @@ def parent_pay_fee(request, fee_id):
 
     return render(request, 'transport/parent_pay_fee.html', context)
 
+
+@login_required
+def admin_fee_dashboard(request):
+    """ Admin dashboard for fee management """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can manage fees.')
+        return redirect('index')
+
+    today = timezone.now().date()
+
+    # Get all fees
+    all_fees = Fee.objects.all()
+    total_fees = all_fees.count()
+
+    # Calculate financial summary
+    total_amount = all_fees.aggregate(total = Sum('amount'))['total'] or Decimal('0.00')
+    total_paid = all_fees.aggregate(total = Sum('paid_amount'))['total'] or Decimal('0.00')
+    total_balance = total_amount - total_paid
+
+    # Count by status
+    pending_count = all_fees.filter(status = 'pending').count()
+    partial_count = all_fees.filter(status = 'partial').count()
+    paid_count = all_fees.filter(status = 'paid').count()
+    overdue_count = all_fees.filter(status = 'overdue').count()
+    waived_count = all_fees.filter(status = 'waived').count()
+
+    # Get overdue fees with details
+    overdue_fees = all_fees.filter(status = 'overdue').select_related('student', 'student__parent')[:20]
+
+    # Recent activity
+    recent_payments = Payment.objects.all().order_by('-payment_date')[:10]
+
+    # Current term
+    current_term = get_current_term()
+    current_year = timezone.now().year
+
+    # Fees for current term
+    current_term_fees = all_fees.filter(term = current_term, year = current_year)
+    current_term_total = current_term_fees.aggregate(total = Sum('amount'))['total'] or Decimal('0.00')
+    current_term_paid = current_term_fees.aggregate(total = Sum('paid_amount'))['total'] or Decimal('0.00')
+    current_term_balance = current_term_total - current_term_paid
+
+    context = {
+        'total_fees': total_fees,
+        'total_amount': total_amount,
+        'total_paid': total_paid,
+        'total_balance': total_balance,
+        'pending_count': pending_count,
+        'partial_count': partial_count,
+        'paid_count': paid_count,
+        'overdue_count': overdue_count,
+        'waived_count': waived_count,
+        'overdue_fees': overdue_fees,
+        'recent_payments': recent_payments,
+        'current_term': current_term,
+        'current_year': current_year,
+        'current_term_total': current_term_total,
+        'current_term_paid': current_term_paid,
+        'current_term_balance': current_term_balance,
+        'collection_rate': (total_paid / total_amount * 100) if total_amount > 0 else 0,
+    }
+
+    return render(request, 'transport/admin_fee_dashboard.html', context)
+
+
+def get_current_term():
+    """ Get the current term based on current month """
+    month = timezone.now().month
+    if month <= 3:
+        return 'January'
+    elif month <= 7:
+        return 'April'
+    else:
+        return 'August'
