@@ -1,0 +1,125 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Generate Fees{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-plus-lg"></i> Generate Term Fees
+        </h1>
+        <div>
+            <a href="{% url 'admin_fee_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-credit-card"></i> Generate Fees
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'generate_fees' %}">
+                        {% csrf_token %}
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            This will generate fees for all active students for the selected term and year.
+                            Fees will be based on each student's bus route.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Term <span class="text-danger">*</span></label>
+                                <select name="term" class="form-select" required>
+                                    <option value="">Select Term</option>
+                                    {% for term_code, term_label in terms %}
+                                        <option value="{{ term_code }}">{{ term_label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Year <span class="text-danger">*</span></label>
+                                <select name="year" class="form-select" required>
+                                    <option value="">Select Year</option>
+                                    {% for year in years %}
+                                        <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>
+                                            {{ year }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Important:</strong> Fees will only be generated for students who do not already have a fee
+                            for the selected term and year. Existing fees will be skipped.
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'admin_fee_dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Generate Fees
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Fee Structure Info -->
+            <div class="card card-shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle"></i> Fee Structure
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Route</th>
+                                    <th>Fee Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Route A - Morning</td>
+                                    <td>$150.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Route A - Afternoon</td>
+                                    <td>$150.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Route B - Morning</td>
+                                    <td>$120.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Route B - Afternoon</td>
+                                    <td>$120.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Route C - Morning</td>
+                                    <td>$180.00</td>
+                                </tr>
+                                <tr>
+                                    <td>Route C - Afternoon</td>
+                                    <td>$180.00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <small class="text-muted">* Fee amounts vary by route. Contact admin for more details.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

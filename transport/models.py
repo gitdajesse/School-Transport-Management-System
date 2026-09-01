@@ -308,8 +308,8 @@ class Fee(models.Model):
 
     TERM_CHOICES = (
         ('January', 'January Term'),
-        ('April', 'April Term'),
-        ('August', 'August Term'),
+        ('May', 'May Term'),
+        ('September', 'September Term'),
     )
 
     STATUS_CHOICES = (

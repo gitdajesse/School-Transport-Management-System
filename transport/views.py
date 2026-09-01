@@ -2972,3 +2972,193 @@ def get_current_term():
         return 'April'
     else:
         return 'August'
+
+
+@login_required
+def generate_fees(request):
+    """ Generate fees for students for a specific term. """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can generate fees.')
+        return redirect('index')
+
+    if request.method == 'POST':
+        term = request.POST.get('term')
+        year = request.POST.get('year')
+
+
+        if not term or not year:
+            messages.error(request, 'Please select term and year.')
+            return redirect('generate_fees')
+
+        year = int(year)
+
+        # Get all active students
+        students = Student.objects.filter(is_active = True)
+
+        created_count = 0
+        skipped_count = 0
+        error_count = 0
+
+        for student in students:
+            # Check if fee already exists for this term and year
+            existing_fee = Fee.objects.filter(
+                student = student,
+                term = term,
+                year = year
+            ).first()
+
+            if existing_fee:
+                skipped_count += 1
+                continue
+
+            try:
+                # Get fee amount from bus route
+                bus = student.bus
+                amount = get_fee_amount_for_bus(bus)
+
+                # Determine due date (first week of the term)
+                due_date = get_due_date_for_term(term, year)
+
+                # Create fee
+                Fee.objects.create(
+                    student = student,
+                    term = term,
+                    year = year,
+                    amount = amount,
+                    due_date = due_date,
+                    status = 'pending'
+                )
+                created_count += 1
+
+            except Exception as e:
+                error_count += 1
+
+        # Send notification to parents
+        if created_count > 0:
+            send_fee_generation_notifications(term, year)
+
+        messages.success(
+            request,
+            f'Fees generated: {created_count} created, {skipped_count} skipped (already exist), {error_count} errors.'
+        )
+        return redirect('admin_fee_dashboard')
+
+
+    # GET - Show form
+    current_year = timezone.now().year
+
+    context = {
+        'terms': Fee.TERM_CHOICES,
+        'current_year': current_year,
+        'years': range(current_year - 1, current_year + 2)
+    }
+
+    return render(request, 'transport/generate_fees.html', context)
+
+
+def get_fee_amount_for_bus(bus):
+    """ Get the fee amount for a student based on their bus route """
+    fee_structure = {
+        'Route A - Morning': Decimal('150.00'),
+        'Route A - Evening': Decimal('150.00'),
+        'Route B - Morning': Decimal('120.00'),
+        'Route B - Evening': Decimal('120.00'),
+        'Route C - Morning': Decimal('180.00'),
+        'Route C - Evening': Decimal('180.00'),
+    }
+
+    return fee_structure.get(bus.route_name, Decimal('150.00'))
+
+
+def get_due_date_for_term(term, year):
+    """ Get the due date for a specific term (First week of term month) """
+    term_months = {
+        'January': 1,
+        'May': 5,
+        'September': 9
+    }
+
+    month = term_months.get(term, 1)
+
+    # First week: 5th day of the month
+    due_date = datetime(year, month, 5).date()
+
+    # If 5th falls on weekend, move to next Monday
+    while due_date.weekday() >= 5:
+        due_date += timedelta(days = 1)
+
+    return due_date
+
+
+def send_fee_generation_notifications(term, year):
+    """ Send notifications to parents when fees are generated """
+    fees = Fee.objects.filter(term = term, year = year)
+
+    # Group by parent
+    parent_fees = {}
+
+    for fee in fees:
+        parent = fee.student.parent
+        if parent not in parent_fees:
+            parent_fees[parent] = []
+        parent_fees[parent].append(fee)
+
+    for parent, fees_list in parent_fees.items():
+        if parent and parent.user:
+            # Create notification
+            send_fee_notification(
+                parent.user,
+                'new_fee',
+                fees_list[0].student,
+                fees_list,
+                None
+            )
+
+
+def send_fee_notification(user, notification_type, student, amount_or_fees, fee):
+    """ Send fee-related notifications """
+    if notification_type == 'new_fee':
+        subject = f'New Transport Fee Available'
+        message = f"""
+        Dear Parent,
+
+        Yor transport fees for {fee.term} {fee.year} are now available.
+
+        Total Amount: ${fee.amount}
+        Due Date: {fee.due_date.strftime('%B %d, %Y')}
+
+        Please make your payment by the due date to ensure uninterrupted transport service.
+
+        Thank you,
+        School Tranport Management System
+        """
+
+    elif notification_type == 'payment_confirmation':
+        subject = f'Payment Confirmation - {student.name}'
+        message = f"""
+        Dear Parent,
+
+        We have received your payment of ${amount_or_fees} for {student.name}.
+
+        Payment Details:
+        - Amount: ${amount_or_fees}
+        - Date: {timezone.now().strftime('%B %d, %Y')}
+        - For: {fee.term} {fee.year}
+
+        Thank you for your payment.
+
+        School Transport Management System
+        """
+
+    else:
+        return
+
+    Notification.objects.create(
+        recipient = user,
+        notification_type = 'fee',
+        delivery_method = 'app',
+        subject = subject,
+        message = message,
+        is_automatic = True,
+        delivered = True
+    )
