@@ -82,5 +82,7 @@ urlpatterns = [
     # Admin fee URLs
     path('fees/admin/', views.admin_fee_dashboard, name = 'admin_fee_dashboard'),
     path('fees/generate/', views.generate_fees, name = 'generate_fees'),
+    path('fees/record-payment/<int:fee_id>', views.record_payment, name = 'record_payment'),
+    path('fees/reports/', views.fee_reports, name = 'fee_reports'),
 ]
 

@@ -1,0 +1,98 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Record Payment{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="page-title mb-0">
+            <i class="bi bi-credit-card"></i> Record Payment
+        </h1>
+        <div>
+            <a href="{% url 'fee_detail' fee.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Fee
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-credit-card"></i> Record Payment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Fee Summary -->
+                    <div class="alert alert-light border">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Student:</strong> {{ fee.student.name }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Fee:</strong> {{ fee.term }} {{ fee.year }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Total Amount:</strong> ${{ fee.amount|floatformat:2 }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Balance Due:</strong>
+                                <span class="text-danger">${{ balance_due|floatformat:2 }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{% url 'record_payment' fee.id %}">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Amount <span class="text-danger">*</span></label>
+                            <input type="number" name="amount" class="form-control"
+                                   step="0.01" min="0.01" max="{{ balance_due }}"
+                                   placeholder="Enter payment amount" required>
+                            <small class="text-muted">Maximum: ${{ balance_due|floatformat:2 }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                            <select name="payment_method" class="form-select" required>
+                                <option value="">Select Payment Method</option>
+                                {% for method_code, method_label in payment_methods %}
+                                    <option value="{{ method_code }}">{{ method_label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Reference Number</label>
+                            <input type="text" name="reference_number" class="form-control"
+                                   placeholder="Transaction ID, Cheque Number, etc.">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Payment Date</label>
+                            <input type="datetime-local" name="payment_date" class="form-control"
+                                   value="{{ now|date:'Y-m-d' }}T{{ now|date:'H:i' }}">
+                            <small class="text-muted">Leave blank to use current date/time.</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Notes</label>
+                            <textarea name="notes" class="form-control" rows="2"
+                                      placeholder="Any additional notes about this payment"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'fee_detail' fee.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Record Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

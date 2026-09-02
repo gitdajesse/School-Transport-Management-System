@@ -3162,3 +3162,145 @@ def send_fee_notification(user, notification_type, student, amount_or_fees, fee)
         is_automatic = True,
         delivered = True
     )
+
+
+@login_required
+def record_payment(request, fee_id):
+    """ Record a payment for a fee (Admin view) """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can record payments.')
+        return redirect('index')
+
+    fee = get_object_or_404(Fee, id = fee_id)
+
+    if request.method == 'POST':
+        amount = request.POST.get('amount')
+        payment_method = request.POST.get('payment_method')
+        reference_number = request.POST.get('reference_number', '')
+        payment_date = request.POST.get('payment_date')
+        notes = request.POST.get('notes', '')
+
+        try:
+            amount = Decimal(amount)
+            if amount <= 0:
+                messages.error(request, 'Payment amount must be greater than zero.')
+                return render(request, 'transport/record_payment.html', {'fee': fee})
+
+            if amount > fee.get_balance_due():
+                messages.error(request, f'Amount cannot exceed balance due: {fee.get_balance_due()}')
+                return render(request, 'transport/record_payment.html', {'fee': fee})
+
+            # Create payment
+            payment = Payment.objects.create(
+                fee = fee,
+                amount = amount,
+                payment_method = payment_method,
+                reference_number = reference_number,
+                payment_date = payment_date or timezone.now(),
+                recorded_by = request.user,
+                notes = notes
+            )
+
+            # Update fee paid amount
+            fee.paid_amount += amount
+            fee.save()
+
+            # Send confirmation notification to parent
+            send_fee_notification(
+                fee.student.parent.user,
+                'payment_confirmation',
+                fee.student,
+                amount,
+                fee
+            )
+
+            messages.success(request, f'Payment of {amount} recorded successfully!')
+            return redirect('fee_detail', fee_id = fee.id)
+
+        except Exception as e:
+            messages.error(request, f'Error recording payment: {str(e)}')
+
+    else:
+        context = {
+            'fee': fee,
+            'balance_due': fee.get_balance_due(),
+            'payment_methods': Payment.PAYMENT_METHODS
+        }
+
+        return render(request, 'transport/record_payment.html', context)
+
+
+@login_required
+def fee_reports(request):
+    """ Generate and view fee reports """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can view reports.')
+        return redirect('index')
+
+    # Get filter parameters
+    term = request.GET.get('term')
+    year = request.GET.get('year')
+    bus_id = request.GET.get('bus')
+    status_filter = request.GET.get('status')
+
+    # Build query
+    fees = Fee.objects.all()
+
+    if term:
+        fees = fees.filter(term = term)
+    if year:
+        fees = fees.filter(year = year)
+    if bus_id:
+        fees = fees.filter(student__bus_id = bus_id)
+    if status_filter:
+        fees = fees.filter(status = status_filter)
+
+    # Summary statistics
+    total_fees = fees.count()
+    total_amount = fees.aggregate(total = Sum('amount'))['total'] or Decimal('0.00')
+    total_paid = fees.aggregate(total = Sum('paid_amount'))['total'] or Decimal('0.00')
+    total_balance = total_amount - total_paid
+
+    # Group by bus
+    bus_summary = fees.values('student__bus__registration', 'student__bus__route_name').annotate(
+        count = Count('id'),
+        total = Sum('amount'),
+        paid = Sum('paid_amount')
+    ).order_by('-total')
+
+    # Group by term
+    term_summary = fees.values('term', 'year').annotate(
+        count = Count('id'),
+        total = Sum('amount'),
+        paid = Sum('paid_amount')
+    ).order_by('-year', '-term')
+
+    # Group by status
+    status_summary = fees.values('status').annotate(
+        count = Count('id'),
+        total = Sum('amount'),
+        paid = Sum('paid_amount')
+    )
+
+    # Get all buses for filter
+    buses = Bus.objects.filter(is_active = True)
+
+    context = {
+        'fees': fees[:200],
+        'total_fees': total_fees,
+        'total_amount': total_amount,
+        'total_paid': total_paid,
+        'total_balance': total_balance,
+        'bus_summary': bus_summary,
+        'term_summary': term_summary,
+        'status_summary': status_summary,
+        'buses':buses,
+        'terms': Fee.TERM_CHOICES,
+        'years': range(2020, timezone.now().year + 2),
+        'selected_term': term,
+        'selected_year': year,
+        'selected_bus': bus_id,
+        'selected_status': status_filter,
+    }
+
+    return render(request, 'transport/fee_reports.html', context)
