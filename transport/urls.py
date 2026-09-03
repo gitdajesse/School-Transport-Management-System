@@ -84,5 +84,6 @@ urlpatterns = [
     path('fees/generate/', views.generate_fees, name = 'generate_fees'),
     path('fees/record-payment/<int:fee_id>', views.record_payment, name = 'record_payment'),
     path('fees/reports/', views.fee_reports, name = 'fee_reports'),
+    path('fees/waive/<int:fee_id>', views.waive_fee, name = 'waive_fee'),
 ]
 

@@ -1,0 +1,187 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Confirm Waive Fee{% endblock %}
+
+{% block body %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card card-shadow border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirm Fee Waiver
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <div class="display-1 text-warning mb-3">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <h4>Are you sure you want to waive this fee?</h4>
+                        <p class="text-muted">This action will mark the fee as waived and remove it from outstanding balance.</p>
+                    </div>
+
+                    <!-- Fee Details -->
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Fee Details:</strong>
+                        <br>
+                        <strong>Student:</strong> {{ fee.student.name }}
+                        <br>
+                        <strong>Parent:</strong> {{ fee.student.parent.name }}
+                        <br>
+                        <strong>Term:</strong> {{ fee.term }} {{ fee.year }}
+                        <br>
+                        <strong>Amount:</strong> <strong>${{ fee.amount|floatformat:2 }}</strong>
+                        <br>
+                        <strong>Paid Amount:</strong> ${{ fee.paid_amount|floatformat:2 }}
+                        <br>
+                        <strong>Balance Due:</strong> <strong class="text-danger">${{ fee.get_balance_due|floatformat:2 }}</strong>
+                        <br>
+                        <strong>Current Status:</strong>
+                        {% include 'includes/fee_status_badge.html' with status=fee.status %}
+                        <br>
+                        <strong>Due Date:</strong> {{ fee.due_date|date:"M d, Y" }}
+                    </div>
+
+                    <!-- Warning Message -->
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Warning:</strong>
+                        <br>
+                        This action <strong>cannot be undone</strong>.
+                        <br>
+                        The fee will be marked as "Waived" and will no longer appear in outstanding balance reports.
+                        <br>
+                        <br>
+                        <strong>Considerations:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Any existing payments will remain recorded</li>
+                            <li>The student will not be charged for this term</li>
+                            <li>This will affect financial reports</li>
+                        </ul>
+                    </div>
+
+                    <!-- Payment History Summary -->
+                    {% if fee.payments.exists %}
+                        <div class="alert alert-light border">
+                            <h6 class="mb-2">
+                                <i class="bi bi-clock-history"></i> Payment History
+                            </h6>
+                            <ul class="list-unstyled mb-0">
+                                {% for payment in fee.payments.all|slice:":5" %}
+                                    <li class="small">
+                                        <i class="bi bi-check-circle text-success"></i>
+                                        ${{ payment.amount|floatformat:2 }} -
+                                        {{ payment.get_payment_method_display }} -
+                                        {{ payment.payment_date|date:"M d, Y" }}
+                                    </li>
+                                {% endfor %}
+                                {% if fee.payments.count > 5 %}
+                                    <li class="small text-muted">+ {{ fee.payments.count|add:"-5" }} more payments</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <!-- Waiver Form -->
+                    <form method="POST" action="{% url 'waive_fee' fee.id %}">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Waiver <span class="text-danger">*</span></label>
+                            <select name="reason" class="form-select" required>
+                                <option value="">Select Reason</option>
+                                <option value="scholarship">Scholarship/Financial Aid</option>
+                                <option value="staff">Staff/Faculty Discount</option>
+                                <option value="sibling">Sibling Discount</option>
+                                <option value="hardship">Financial Hardship</option>
+                                <option value="admin_error">Administrative Error</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Additional Notes</label>
+                            <textarea name="notes"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="Provide additional details about the reason for waiving this fee..."></textarea>
+                            <small class="text-muted">This will be saved with the fee record for future reference.</small>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="confirmCheck" required>
+                            <label class="form-check-label" for="confirmCheck">
+                                <strong>I understand that this action cannot be undone.</strong>
+                            </label>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                            <a href="{% url 'fee_detail' fee.id %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle"></i> Yes, Waive Fee
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Quick Navigation -->
+            <div class="text-center mt-3">
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <a href="{% url 'fee_detail' fee.id %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-receipt"></i> Fee Details
+                    </a>
+                    <a href="{% url 'admin_fee_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-credit-card"></i> Fee Dashboard
+                    </a>
+                    <a href="{% url 'student_detail' fee.student.id %}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-person"></i> Student Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for confirmation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const confirmCheck = document.getElementById('confirmCheck');
+            const submitBtn = document.querySelector('button[type="submit"]');
+
+            // Disable submit button initially
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+
+            // Enable submit button when checkbox is checked
+            if (confirmCheck) {
+                confirmCheck.addEventListener('change', function() {
+                    if (submitBtn) {
+                        submitBtn.disabled = !this.checked;
+                    }
+                });
+            }
+
+            // Additional confirmation on submit
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const reason = document.querySelector('select[name="reason"]').value;
+                    if (!reason) {
+                        e.preventDefault();
+                        alert('Please select a reason for waiving the fee.');
+                        return false;
+                    }
+
+                    if (!confirm('⚠️ Are you absolutely sure you want to waive this fee?\n\nThis action cannot be undone!')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock %}

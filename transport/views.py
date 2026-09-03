@@ -2969,9 +2969,9 @@ def get_current_term():
     if month <= 3:
         return 'January'
     elif month <= 7:
-        return 'April'
+        return 'May'
     else:
-        return 'August'
+        return 'September'
 
 
 @login_required
@@ -3150,18 +3150,89 @@ def send_fee_notification(user, notification_type, student, amount_or_fees, fee)
         School Transport Management System
         """
 
+    elif notification_type == 'waived_fee':
+        subject = f'Fee Waived - {student.name}'
+        message = f"""
+        Dear Parent,
+
+        This is to inform you that the transport fee for {student.name} has been waived.
+
+        Waived Fee Details:
+        - Term: {fee.term} {fee.year}
+        - Amount: ${fee.amount}
+        - Reason: {fee.notes|default:"Administrative decision"}
+
+        if you have any questions, please contact the school administration.
+
+        Thank you,
+        School Transport Management System
+        """
+
+    elif notification_type == 'upcoming_due':
+        days_until_due = (fee.due_date - timezone.now().date()).days
+        subject = f'Upcoming Fee Due - {student.name}'
+        message = f"""
+        Dear Parent,
+
+        This is a reminder that your transport fee for {student.name} is due soon.
+
+        Fee Details:
+        - Term: {fee.term} {fee.year}
+        - Amount: ${fee.amount}
+        - Due Date: {fee.due_date.strftime('%B %d, %Y')}
+        - Days Remaining: {days_until_due} days
+
+        Please make your payment before the due date to avoid service interruption.
+
+        Thnak you,
+        School Transport Management System
+        """
+
+    elif notification_type == 'overdue':
+        days_overdue = (timezone.now().date() - fee.due_date).days
+        subject = f'Overdue Fee - {student.name}'
+        message = f"""
+        Dear Parent
+
+        This is to inform you that your transport fee for {student.name} is now overdue.
+
+        Fee Details:
+        - Term: {fee.term} {fee.year}
+        - Amount: ${fee.amount}
+        - Due Date: {fee.due_date.strftime('%B %d, %Y')}
+        - Days Overdue: {days_overdue} days
+
+        IMPORTANT: Your child will not be picked up until this fee is paid.
+
+        Please make your payment immediately to avoid service interruption.
+
+        Thank you,
+        School Transport Management System
+        """
+
     else:
         return
 
-    Notification.objects.create(
-        recipient = user,
-        notification_type = 'fee',
-        delivery_method = 'app',
-        subject = subject,
-        message = message,
-        is_automatic = True,
-        delivered = True
-    )
+    try:
+        notification = Notification.objects.create(
+            recipient = user,
+            notification_type = 'fee',
+            delivery_method = 'app',
+            subject = subject,
+            message = message,
+            is_automatic = True,
+            delivered = True,
+            read = False
+        )
+
+        print(f"Fee notification sent to {user.username}: {notification_type}")
+        return notification
+
+    except Exception as e:
+        print(f"Error sending fee notification: {e}")
+        return None
+
+
 
 
 @login_required
@@ -3206,13 +3277,14 @@ def record_payment(request, fee_id):
             fee.save()
 
             # Send confirmation notification to parent
-            send_fee_notification(
-                fee.student.parent.user,
-                'payment_confirmation',
-                fee.student,
-                amount,
-                fee
-            )
+            if fee.student.parent and fee.student.parent.user:
+                send_fee_notification(
+                    fee.student.parent.user,
+                    'payment_confirmation',
+                    fee.student,
+                    amount,
+                    fee
+                )
 
             messages.success(request, f'Payment of {amount} recorded successfully!')
             return redirect('fee_detail', fee_id = fee.id)
@@ -3304,3 +3376,46 @@ def fee_reports(request):
     }
 
     return render(request, 'transport/fee_reports.html', context)
+
+
+@login_required
+def waive_fee(request, fee_id):
+    """ Waive a fee (Admin Only) """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied. Only admins can waive fees.')
+        return redirect('index')
+
+    fee = get_object_or_404(Fee, id = fee_id)
+
+    if request.method == 'POST':
+        reason = request.POST.get('reason')
+        notes = request.POST.get('notes', '')
+
+        if not reason:
+            messages.error(request, 'Please select a reason for waiving the fee.')
+            return render(request, 'transport/confirm_waive_fee.html', {'fee': fee})
+
+
+        # Update fee
+        fee.status = 'waived'
+        fee.notes = f"Fee waived: {reason}\n{notes}" if notes else f"Fee waived: {reason}"
+        fee.save()
+
+        # Send notification to parent
+        if fee.student.parent and fee.student.parent.user:
+            send_fee_notification(
+                fee.student.parent.user,
+                'fee_waived',
+                fee.student,
+                fee.amount,
+                fee
+            )
+
+        messages.success(request, f'Fee for {fee.student.name} has been waived.')
+        return redirect('fee_detail', fee_id = fee.id)
+
+    context = {
+        'fee': fee,
+    }
+
+    return render(request, 'transport/confirm_waive_fee.html', context)
