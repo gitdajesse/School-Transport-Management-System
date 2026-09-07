@@ -1374,6 +1374,10 @@ def assistant_attendance(request):
     student_attendance_data = []
 
     for student in students:
+        # Check fee status for rach student
+        has_overdue = Fee.objects.filter(student = student, status = 'overdue').exists()
+        has_unpaid = Fee.objects.filter(student = student, status__in = ['pending', 'partial']).exists()
+
         # Get today's attendance record for this student
         try:
             record = Attendance.objects.get(student = student, date = today)
@@ -1409,6 +1413,9 @@ def assistant_attendance(request):
             'pickup_time': pickup_time,
             'dropoff_time':  dropoff_time,
             'record_id': record_id,
+            'has_overdue_fees': has_overdue,
+            'has_unpaid_fees': has_unpaid,
+            'can_pickup': not has_overdue
         })
 
     # Statistics
@@ -1471,6 +1478,21 @@ def mark_attendance(request):
             return JsonResponse({
                 'error': 'Student not on your bus'}, status = 403
                 )
+
+        # Check fee status before pickup
+        if action == 'pickup':
+            # Check if student has overdue fees
+            has_overdue = Fee.objects.filter(
+                student = student,
+                status = 'overdue'
+            ).exists()
+
+            if has_overdue:
+                return JsonResponse({
+                    'error': f'{student.name} cannot be picked up due to overdue fees.',
+                    'fee_blocked': True,
+                    'message': 'Student has overdue fees. Please contact admin'
+                }, status = 403)
 
         today = timezone.now().date()
         attendance, created = Attendance.objects.get_or_create(
@@ -3160,7 +3182,7 @@ def send_fee_notification(user, notification_type, student, amount_or_fees, fee)
         Waived Fee Details:
         - Term: {fee.term} {fee.year}
         - Amount: ${fee.amount}
-        - Reason: {fee.notes|default:"Administrative decision"}
+        - Reason: {fee.notes}
 
         if you have any questions, please contact the school administration.
 
@@ -3419,3 +3441,58 @@ def waive_fee(request, fee_id):
     }
 
     return render(request, 'transport/confirm_waive_fee.html', context)
+
+
+@login_required
+def check_student_fee_status(request):
+    """ Check if a student's fees are paid before allowing pickup. """
+    if request.user.user_type != 'assistant':
+        return JsonResponse(
+            {'error': 'Access denied'},
+            status = 403
+            )
+
+    student_id = request.GET.get('student_id')
+
+    if not student_id:
+        return JsonResponse(
+            {'error': 'Student ID required'},
+            status = 400
+            )
+
+    try:
+        student = Student.objects.get(id = student_id)
+
+        # Check if student has any overdue fees
+        has_overdue_fees = Fee.objects.filter(
+            student = student,
+            status = 'overdue'
+        ).exists()
+
+        # Check if student has any unpaid fees
+        has_unpaid_fees = Fee.objects.filter(
+            student = student,
+            status__in = ['pending', 'partial', 'overdue']
+        ).exists()
+
+        # If there are overdue fees, student cannot be picked up
+        can_pickup = not has_overdue_fees
+
+        return JsonResponse({
+            'can_pickup': can_pickup,
+            'has_overdue': has_overdue_fees,
+            'has_unpaid': has_unpaid_fees,
+            'message': 'Student cannot be picked up due to overdue fees' if has_overdue_fees else 'Student can be picked up'
+        })
+
+    except Student.DoesNotExist:
+        return JsonResponse(
+            {'error': 'Student not found'},
+            status = 400
+            )
+
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e)},
+            status = 500
+            )

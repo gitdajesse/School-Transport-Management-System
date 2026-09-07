@@ -95,11 +95,16 @@
                         <tbody>
                             {% for item in student_attendance_data %}
                                 <tr id="student-{{ item.student.id }}"
-                                    class="{% if item.is_picked_up %}table-success{% elif item.is_absent %}table-danger{% endif %}">
+                                    class="{% if item.has_overdue_fees %}table-danger{% elif item.is_picked_up %}table-success{% elif item.is_absent %}table-danger{% endif %}">
                                     <td>{{ forloop.counter }}</td>
                                     <td>
                                         <i class="bi bi-person-fill text-primary"></i>
                                         {{ item.student.name }}
+                                        {% if item.has_overdue_fees %}
+                                            <span class="badge bg-danger ms-1">
+                                                <i class="bi bi-exclamation-triangle"></i> Fee Overdue
+                                            </span>
+                                        {% endif %}
                                     </td>
                                     <td>{{ item.student.grade }}</td>
                                     <td>{{ item.student.pick_up_location|truncatechars:20 }}</td>
@@ -110,13 +115,6 @@
                                             {% elif item.status == 'absent' %}bg-danger
                                             {% elif item.status == 'late' %}bg-warning
                                             {% else %}bg-secondary{% endif %}">
-                                            <i class="bi
-                                                {% if item.status == 'picked_up' %}bi-check-circle
-                                                {% elif item.status == 'dropped_off' %}bi-box-arrow-right
-                                                {% elif item.status == 'absent' %}bi-x-circle
-                                                {% elif item.status == 'late' %}bi-clock
-                                                {% else %}bi-question-circle{% endif %}">
-                                            </i>
                                             {{ item.status_display }}
                                         </span>
                                     </td>
@@ -132,9 +130,8 @@
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
                                             <button class="btn btn-success"
-                                            title="Mark Pick Up"
                                                     onclick="markStudent({{ item.student.id }}, 'pickup')"
-                                                    {% if item.is_picked_up %}disabled{% endif %}>
+                                                    {% if item.is_picked_up or not item.can_pickup %}disabled{% endif %}>
                                                 <i class="bi bi-check-lg"></i>
                                             </button>
                                             <button class="btn btn-info"
@@ -204,6 +201,29 @@
                 return;
             }
 
+            // ✅ If action is 'pickup', check fee status first
+            if (action === 'pickup') {
+                // First, check if student has overdue fees
+                fetch(`/api/check-fee-status/?student_id=${studentId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.can_pickup) {
+                            alert(`❌ ${data.message}`);
+                            return;
+                        }
+                        // If no overdue fees, proceed with pickup
+                        proceedWithMarking(studentId, action);
+                    })
+                    .catch(error => {
+                        alert('Error checking fee status: ' + error);
+                    });
+            } else {
+                // For other actions (dropoff, absent, late), proceed directly
+                proceedWithMarking(studentId, action);
+            }
+        }
+
+        function proceedWithMarking(studentId, action) {
             fetch('{% url "mark_attendance" %}', {
                 method: 'POST',
                 headers: {
