@@ -271,9 +271,6 @@
                                             ${{ fee.get_balance_due|floatformat:2 }}
                                         </strong>
                                     </td>
-                                    <td>
-                                        {% include 'includes/fee_status_badge.html' with status=fee.status %}
-                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>

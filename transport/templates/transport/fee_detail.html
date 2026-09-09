@@ -30,11 +30,6 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <!-- Status Badge -->
-                    <div class="text-center mb-3">
-                        {% include 'includes/fee_status_badge.html' with status=fee.status %}
-                    </div>
-
                     <dl class="row mb-0">
                         <dt class="col-sm-5">Student:</dt>
                         <dd class="col-sm-7">
@@ -71,11 +66,6 @@
                             {% if fee.is_overdue %}
                                 <span class="badge bg-danger ms-2">Overdue</span>
                             {% endif %}
-                        </dd>
-
-                        <dt class="col-sm-5">Status:</dt>
-                        <dd class="col-sm-7">
-                            {% include 'includes/fee_status_badge.html' with status=fee.status %}
                         </dd>
 
                         <dt class="col-sm-5">Created:</dt>

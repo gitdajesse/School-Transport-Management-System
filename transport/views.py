@@ -3020,6 +3020,7 @@ def generate_fees(request):
         created_count = 0
         skipped_count = 0
         error_count = 0
+        error_messages = []
 
         for student in students:
             # Check if fee already exists for this term and year
@@ -3036,7 +3037,24 @@ def generate_fees(request):
             try:
                 # Get fee amount from bus route
                 bus = student.bus
+                parent = student.parent
+
+                if not bus:
+                    error_messages.append(f"Student {student.name} has no bus assigned")
+                    error_count += 1
+                    continue
+
+                if not parent:
+                    error_messages.append(f"Student {student.name} has no parent assigned")
+                    error_count += 1
+                    continue
+
                 amount = get_fee_amount_for_bus(bus)
+
+                if amount <= 0:
+                    error_messages.append(f"Student {student.name}: Invalid fee amount ${amount} for bus {student.bus.registration}")
+                    error_count += 1
+                    continue
 
                 # Determine due date (first week of the term)
                 due_date = get_due_date_for_term(term, year)
@@ -3051,13 +3069,21 @@ def generate_fees(request):
                     status = 'pending'
                 )
                 created_count += 1
+                print(f"Created fee for {student.name}: ${amount}")
 
             except Exception as e:
                 error_count += 1
+                error_messages.append(f"Student {student.name}: {str(e)}")
 
         # Send notification to parents
         if created_count > 0:
             send_fee_generation_notifications(term, year)
+
+        if error_messages:
+            for error in error_messages[:10]:
+                messages.error(request, error)
+            if len(error_messages) > 10:
+                messages.error(request, f"... and {len(error_messages) - 10} more errors")
 
         messages.success(
             request,
@@ -3093,7 +3119,10 @@ def get_fee_amount_for_bus(bus):
 
 
 def get_due_date_for_term(term, year):
-    """ Get the due date for a specific term (First week of term month) """
+    """
+    Get the due date for a specific term (First week of term month)
+    """
+
     term_months = {
         'January': 1,
         'May': 5,
@@ -3113,50 +3142,82 @@ def get_due_date_for_term(term, year):
 
 
 def send_fee_generation_notifications(term, year):
-    """ Send notifications to parents when fees are generated """
-    fees = Fee.objects.filter(term = term, year = year)
+    """
+    Send notifications to parents when fees are generated.
+    """
+    # ✅ Fix: Use exists() not exist()
+    fees = Fee.objects.filter(term=term, year=year)
+
+    if not fees.exists():
+        print(f"⚠️ No fees found for {term} {year}")
+        return  # ✅ Return early
 
     # Group by parent
     parent_fees = {}
 
     for fee in fees:
         parent = fee.student.parent
+        # ✅ Check if parent exists and has a user
+        if not parent or not parent.user:
+            print(f"⚠️ No user for parent of {fee.student.name}")
+            continue
+
         if parent not in parent_fees:
             parent_fees[parent] = []
         parent_fees[parent].append(fee)
 
+    # Send notification to each parent
     for parent, fees_list in parent_fees.items():
         if parent and parent.user:
-            # Create notification
+            # ✅ Pass the fee as a list or as the first fee
+            # Option A: Send as list (if you want to show all fees)
             send_fee_notification(
                 parent.user,
                 'new_fee',
-                fees_list[0].student,
                 fees_list,
-                None
+                term,
+                year
             )
+
+    print(f"✅ Sent fee generation notifications for {term} {year}")
 
 
 def send_fee_notification(user, notification_type, student, amount_or_fees, fee):
-    """ Send fee-related notifications """
+    """
+    Send fee-related notifications to parents.
+    """
+    from .models import Notification
+
     if notification_type == 'new_fee':
-        subject = f'New Transport Fee Available'
+        # ✅ fee must NOT be None
+        if not fee:
+            print(f"⚠️ Cannot send new_fee notification: fee is None")
+            return None
+
+        subject = f'📋 New Transport Fee - {fee.student.name}'
         message = f"""
         Dear Parent,
 
-        Yor transport fees for {fee.term} {fee.year} are now available.
+        Your transport fee for {fee.student.name} for {fee.term} {fee.year} is now available.
 
-        Total Amount: ${fee.amount}
-        Due Date: {fee.due_date.strftime('%B %d, %Y')}
+        Fee Details:
+        - Student: {fee.student.name}
+        - Term: {fee.term} {fee.year}
+        - Amount: ${fee.amount}
+        - Due Date: {fee.due_date.strftime('%B %d, %Y')}
 
         Please make your payment by the due date to ensure uninterrupted transport service.
 
         Thank you,
-        School Tranport Management System
+        School Transport Management System
         """
 
     elif notification_type == 'payment_confirmation':
-        subject = f'Payment Confirmation - {student.name}'
+        if not fee:
+            print(f"⚠️ Cannot send payment confirmation notification: fee is None")
+            return None
+
+        subject = f'✅ Payment Confirmation - {fee.student.name}'
         message = f"""
         Dear Parent,
 
@@ -3172,31 +3233,39 @@ def send_fee_notification(user, notification_type, student, amount_or_fees, fee)
         School Transport Management System
         """
 
-    elif notification_type == 'waived_fee':
-        subject = f'Fee Waived - {student.name}'
+    elif notification_type == 'fee_waived':
+        if not fee:
+            print(f"⚠️ Cannot send feewaived notification: fee is None")
+            return None
+
+        subject = f'✅ Fee Waived - {fee.student.name}'
         message = f"""
         Dear Parent,
 
-        This is to inform you that the transport fee for {student.name} has been waived.
+        This is to inform you that the transport fee for {fee.student.name} has been waived.
 
         Waived Fee Details:
         - Term: {fee.term} {fee.year}
         - Amount: ${fee.amount}
         - Reason: {fee.notes}
 
-        if you have any questions, please contact the school administration.
+        If you have any questions, please contact the school administration.
 
         Thank you,
         School Transport Management System
         """
 
     elif notification_type == 'upcoming_due':
+        if not fee:
+            print(f"⚠️ Cannot send upcoming due notification: fee is None")
+            return None
+
         days_until_due = (fee.due_date - timezone.now().date()).days
-        subject = f'Upcoming Fee Due - {student.name}'
+        subject = f'⏰ Upcoming Fee Due - {fee.student.name}'
         message = f"""
         Dear Parent,
 
-        This is a reminder that your transport fee for {student.name} is due soon.
+        This is a reminder that your transport fee for {fee.student.name} is due soon.
 
         Fee Details:
         - Term: {fee.term} {fee.year}
@@ -3206,17 +3275,21 @@ def send_fee_notification(user, notification_type, student, amount_or_fees, fee)
 
         Please make your payment before the due date to avoid service interruption.
 
-        Thnak you,
+        Thank you,
         School Transport Management System
         """
 
     elif notification_type == 'overdue':
-        days_overdue = (timezone.now().date() - fee.due_date).days
-        subject = f'Overdue Fee - {student.name}'
-        message = f"""
-        Dear Parent
+        if not fee:
+            print(f"⚠️ Cannot send overdue notification: fee is None")
+            return None
 
-        This is to inform you that your transport fee for {student.name} is now overdue.
+        days_overdue = (timezone.now().date() - fee.due_date).days
+        subject = f'❌ Overdue Fee - {fee.student.name}'
+        message = f"""
+        Dear Parent,
+
+        This is to inform you that your transport fee for {fee.student.name} is now overdue.
 
         Fee Details:
         - Term: {fee.term} {fee.year}
@@ -3233,28 +3306,26 @@ def send_fee_notification(user, notification_type, student, amount_or_fees, fee)
         """
 
     else:
-        return
-
-    try:
-        notification = Notification.objects.create(
-            recipient = user,
-            notification_type = 'fee',
-            delivery_method = 'app',
-            subject = subject,
-            message = message,
-            is_automatic = True,
-            delivered = True,
-            read = False
-        )
-
-        print(f"Fee notification sent to {user.username}: {notification_type}")
-        return notification
-
-    except Exception as e:
-        print(f"Error sending fee notification: {e}")
+        print(f"⚠️ Unknown notification type: {notification_type}")
         return None
 
-
+    # Create notification
+    try:
+        notification = Notification.objects.create(
+            recipient=user,
+            notification_type='fee',
+            delivery_method='app',
+            subject=subject,
+            message=message,
+            is_automatic=True,
+            delivered=True,
+            read=False
+        )
+        print(f"✅ Fee notification sent to {user.username}: {notification_type}")
+        return notification
+    except Exception as e:
+        print(f"❌ Error sending fee notification: {e}")
+        return None
 
 
 @login_required
