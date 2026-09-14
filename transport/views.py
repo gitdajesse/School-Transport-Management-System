@@ -3144,42 +3144,34 @@ def get_due_date_for_term(term, year):
 def send_fee_generation_notifications(term, year):
     """
     Send notifications to parents when fees are generated.
+    Sends one notification per fee (one per student)
     """
-    # ✅ Fix: Use exists() not exist()
+    # Fix: Use exists() not exist()
     fees = Fee.objects.filter(term=term, year=year)
 
     if not fees.exists():
-        print(f"⚠️ No fees found for {term} {year}")
-        return  # ✅ Return early
+        print(f"No fees found for {term} {year}")
+        return  #  Return early
 
-    # Group by parent
-    parent_fees = {}
+    notifications_sent = 0
 
     for fee in fees:
         parent = fee.student.parent
-        # ✅ Check if parent exists and has a user
+
         if not parent or not parent.user:
-            print(f"⚠️ No user for parent of {fee.student.name}")
+            print(f"No user for parent of {fee.student.name}")
             continue
 
-        if parent not in parent_fees:
-            parent_fees[parent] = []
-        parent_fees[parent].append(fee)
-
-    # Send notification to each parent
-    for parent, fees_list in parent_fees.items():
-        if parent and parent.user:
-            # ✅ Pass the fee as a list or as the first fee
-            # Option A: Send as list (if you want to show all fees)
             send_fee_notification(
                 parent.user,
                 'new_fee',
-                fees_list,
-                term,
-                year
+                fee.student,
+                fee.amount,
+                fee
             )
+            notifications_sent += 1
 
-    print(f"✅ Sent fee generation notifications for {term} {year}")
+    print(f"Sent {notifications_sent} fee generation notifications for {term} {year}")
 
 
 def send_fee_notification(user, notification_type, student, amount_or_fees, fee):
@@ -3194,14 +3186,14 @@ def send_fee_notification(user, notification_type, student, amount_or_fees, fee)
             print(f"⚠️ Cannot send new_fee notification: fee is None")
             return None
 
-        subject = f'📋 New Transport Fee - {fee.student.name}'
+        subject = f'📋 New Transport Fee - {student.name}'
         message = f"""
         Dear Parent,
 
-        Your transport fee for {fee.student.name} for {fee.term} {fee.year} is now available.
+        Your transport fee for {student.name} for {fee.term} {fee.year} is now available.
 
         Fee Details:
-        - Student: {fee.student.name}
+        - Student: {student.name}
         - Term: {fee.term} {fee.year}
         - Amount: ${fee.amount}
         - Due Date: {fee.due_date.strftime('%B %d, %Y')}

@@ -325,11 +325,11 @@ class Fee(models.Model):
     term = models.CharField(max_length=20, choices=TERM_CHOICES)
     year = models.IntegerField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    due_date = models.DateField()
+    due_date = models.DateField()  # ✅ This is already a DateField
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))  # ✅ Use Decimal
-    balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))      # ✅ Use Decimal
+    paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -351,7 +351,7 @@ class Fee(models.Model):
 
     def save(self, *args, **kwargs):
         """ Calculate balance before saving """
-        # ✅ FIX: Ensure both are Decimal types
+        # ✅ Ensure amount and paid_amount are Decimal
         amount = Decimal(str(self.amount)) if self.amount else Decimal('0.00')
         paid_amount = Decimal(str(self.paid_amount)) if self.paid_amount else Decimal('0.00')
 
