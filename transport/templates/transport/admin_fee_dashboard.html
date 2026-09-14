@@ -165,9 +165,8 @@
                                     <td>${{ fee.amount|floatformat:2 }}</td>
                                     <td>{{ fee.due_date|date:"M d, Y" }}</td>
                                     <td>
-                                        <span class="badge bg-danger">
-                                            {{ fee.due_date|timesince }}
-                                        </span>
+                                        <!-- ✅ FIXED: Include path -->
+                                        {% include 'transport/fee_status_badge.html' with status=fee.status %}
                                     </td>
                                     <td class="text-center">
                                         <a href="{% url 'fee_detail' fee.id %}" class="btn btn-sm btn-outline-info">

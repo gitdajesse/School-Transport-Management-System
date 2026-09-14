@@ -66,7 +66,8 @@
                                         </td>
                                         <td>{{ fee.due_date|date:"M d, Y" }}</td>
                                         <td>
-                                            {% include 'includes/fee_status_badge.html' with status=fee.status %}
+                                            <!-- ✅ FIXED: Include path -->
+                                            {% include 'transport/fee_status_badge.html' with status=fee.status %}
                                         </td>
                                         <td class="text-center">
                                             <div class="btn-group btn-group-sm">

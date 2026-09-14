@@ -38,7 +38,8 @@
                         <strong>Balance Due:</strong> <strong class="text-danger">${{ fee.get_balance_due|floatformat:2 }}</strong>
                         <br>
                         <strong>Current Status:</strong>
-                        {% include 'includes/fee_status_badge.html' with status=fee.status %}
+                        <!-- ✅ FIXED: Include path -->
+                        {% include 'transport/fee_status_badge.html' with status=fee.status %}
                         <br>
                         <strong>Due Date:</strong> {{ fee.due_date|date:"M d, Y" }}
                     </div>

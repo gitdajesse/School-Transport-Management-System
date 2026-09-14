@@ -271,6 +271,10 @@
                                             ${{ fee.get_balance_due|floatformat:2 }}
                                         </strong>
                                     </td>
+                                    <td>
+                                        <!-- ✅ FIXED: Include path -->
+                                        {% include 'transport/fee_status_badge.html' with status=fee.status %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
