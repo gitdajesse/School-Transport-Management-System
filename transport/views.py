@@ -2907,7 +2907,7 @@ def parent_pay_fee(request, fee_id):
                 fee
             )
 
-            messages.success(request, f'Payment of {amount} recorded successfully!')
+            messages.success(request, f'Payment of ${amount} recorded successfully!')
             return redirect('fee_detail', fee_id = fee.id)
 
         except Exception as e:
