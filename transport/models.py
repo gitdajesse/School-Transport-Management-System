@@ -358,7 +358,13 @@ class Fee(models.Model):
         # ✅ Calculate balance
         self.balance = amount - paid_amount
 
-        # ✅ Update status based on balance
+        # ✅ CRITICAL FIX: Skip status override if the fee is waived
+        if self.status == 'waived':
+            # Don't override the status for waived fees
+            super().save(*args, **kwargs)
+            return
+
+        # ✅ Update status based on balance (only for non-waived fees)
         if self.balance <= Decimal('0.00') and paid_amount > Decimal('0.00'):
             self.status = 'paid'
             if not self.paid_at:
