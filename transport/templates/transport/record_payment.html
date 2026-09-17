@@ -1,6 +1,6 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}Record Payment{% endblock %}
+{% block title %}Record Payment - {{ fee.student.name }}{% endblock %}
 
 {% block body %}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -36,8 +36,17 @@
                                 <strong>Total Amount:</strong> ${{ fee.amount|floatformat:2 }}
                             </div>
                             <div class="col-md-6">
+                                <strong>Already Paid:</strong> ${{ fee.paid_amount|floatformat:2 }}
+                            </div>
+                            <div class="col-md-6">
                                 <strong>Balance Due:</strong>
-                                <span class="text-danger">${{ balance_due|floatformat:2 }}</span>
+                                <span class="text-danger fw-bold">
+                                    ${{ balance_due|floatformat:2 }}
+                                </span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Status:</strong>
+                                {% include 'transport/fee_status_badge.html' with status=fee.status %}
                             </div>
                         </div>
                     </div>
@@ -50,7 +59,9 @@
                             <input type="number" name="amount" class="form-control"
                                    step="0.01" min="0.01" max="{{ balance_due }}"
                                    placeholder="Enter payment amount" required>
-                            <small class="text-muted">Maximum: ${{ balance_due|floatformat:2 }}</small>
+                            <small class="text-muted">
+                                Maximum: <strong>${{ balance_due|floatformat:2 }}</strong>
+                            </small>
                         </div>
 
                         <div class="mb-3">
@@ -65,8 +76,9 @@
 
                         <div class="mb-3">
                             <label class="form-label">Reference Number</label>
-                            <input type="text" name="reference_number" class="form-control"
+                            <input type="text" name="reference_number" autocomplete = "off" class="form-control"
                                    placeholder="Transaction ID, Cheque Number, etc.">
+                            <small class="text-muted">Optional but recommended for tracking</small>
                         </div>
 
                         <div class="mb-3">
@@ -91,6 +103,23 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- Quick Tips -->
+            <div class="card card-shadow mt-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightbulb"></i> Quick Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li><i class="bi bi-check-circle text-success"></i> Record partial payments for installment plans</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Always include reference number for M-Pesa/Bank transfers</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Parent will receive automatic confirmation notification</li>
+                        <li><i class="bi bi-check-circle text-success"></i> Fee status updates automatically based on payment amount</li>
+                    </ul>
                 </div>
             </div>
         </div>

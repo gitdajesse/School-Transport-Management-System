@@ -2950,7 +2950,7 @@ def admin_fee_dashboard(request):
     overdue_fees = all_fees.filter(status = 'overdue').select_related('student', 'student__parent')[:20]
 
     # Recent activity
-    recent_payments = Payment.objects.all().order_by('-payment_date')[:10]
+    recent_payments = Payment.objects.all().order_by('-payment_date')[:5]
 
     # Current term
     current_term = get_current_term()
@@ -3170,7 +3170,7 @@ def send_fee_generation_notifications(term, year):
                 fee
             )
             notifications_sent += 1
-            
+
     print(f"Sent {notifications_sent} fee generation notifications for {term} {year}")
 
 
@@ -3338,13 +3338,24 @@ def record_payment(request, fee_id):
 
         try:
             amount = Decimal(amount)
+
             if amount <= 0:
                 messages.error(request, 'Payment amount must be greater than zero.')
-                return render(request, 'transport/record_payment.html', {'fee': fee})
+                return render(request, 'transport/record_payment.html', {
+                    'fee': fee,
+                    'balance_due': fee.get_balance_due(),
+                    'payment_methods': Payment.PAYMENT_METHODS,
+                    'now': timezone.now(),
+                    })
 
             if amount > fee.get_balance_due():
                 messages.error(request, f'Amount cannot exceed balance due: {fee.get_balance_due()}')
-                return render(request, 'transport/record_payment.html', {'fee': fee})
+                return render(request, 'transport/record_payment.html', {
+                    'fee': fee,
+                    'balance_due': fee.get_balance_due(),
+                    'payment_methods': Payment.PAYMENT_METHODS,
+                    'now': timezone.now(),
+                    })
 
             # Create payment
             payment = Payment.objects.create(
@@ -3371,17 +3382,24 @@ def record_payment(request, fee_id):
                     fee
                 )
 
-            messages.success(request, f'Payment of {amount} recorded successfully!')
+            messages.success(request, f'Payment of ${amount} recorded successfully!')
             return redirect('fee_detail', fee_id = fee.id)
 
         except Exception as e:
             messages.error(request, f'Error recording payment: {str(e)}')
+            return render(request, 'transport/record_payment.html', {
+                'fee': fee,
+                'balance_due': fee.get_balance_due(),
+                'payment_methods': Payment.PAYMENT_METHODS,
+                'now': timezone.now(),
+            })
 
     else:
         context = {
             'fee': fee,
             'balance_due': fee.get_balance_due(),
-            'payment_methods': Payment.PAYMENT_METHODS
+            'payment_methods': Payment.PAYMENT_METHODS,
+            'now': timezone.now(),
         }
 
         return render(request, 'transport/record_payment.html', context)

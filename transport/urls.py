@@ -69,22 +69,22 @@ urlpatterns = [
 
     # Assistant Management URLs
     path('assistants/', views.assistant_list, name = 'assistant_list'),
-    path('assistants/details/<int:assistant_id>', views.assistant_detail, name = 'assistant_detail'),
-    path('assistants/edit/<int:assistant_id>', views.edit_assistant, name = 'edit_assistant'),
-    path('assistants/deactivate/<int:assistant_id>', views.deactivate_assistant, name = 'deactivate_assistant'),
-    path('assistants/reactivate/<int:assistant_id>', views.reactivate_assistant, name = 'reactivate_assistant'),
+    path('assistants/details/<int:assistant_id>/', views.assistant_detail, name = 'assistant_detail'),
+    path('assistants/edit/<int:assistant_id>/', views.edit_assistant, name = 'edit_assistant'),
+    path('assistants/deactivate/<int:assistant_id>/', views.deactivate_assistant, name = 'deactivate_assistant'),
+    path('assistants/reactivate/<int:assistant_id>/', views.reactivate_assistant, name = 'reactivate_assistant'),
 
     # Parent fee URLs
     path('fees/', views.parent_fee_dashboard, name = 'parent_fee_dashboard'),
-    path('fees/detail/<int:fee_id>', views.fee_detail, name = 'fee_detail'),
-    path('fees/pay/<int:fee_id>', views.parent_pay_fee, name = 'parent_pay_fee'),
+    path('fees/detail/<int:fee_id>/', views.fee_detail, name = 'fee_detail'),
+    path('fees/pay/<int:fee_id>/', views.parent_pay_fee, name = 'parent_pay_fee'),
 
     # Admin fee URLs
     path('fees/admin/', views.admin_fee_dashboard, name = 'admin_fee_dashboard'),
     path('fees/generate/', views.generate_fees, name = 'generate_fees'),
-    path('fees/record-payment/<int:fee_id>', views.record_payment, name = 'record_payment'),
+    path('fees/record-payment/<int:fee_id>/', views.record_payment, name = 'record_payment'),
     path('fees/reports/', views.fee_reports, name = 'fee_reports'),
-    path('fees/waive/<int:fee_id>', views.waive_fee, name = 'waive_fee'),
+    path('fees/waive/<int:fee_id>/', views.waive_fee, name = 'waive_fee'),
 
     # API endpoints
     path('api/check-fee-status/', views.check_student_fee_status, name = 'check_student_fee_status')

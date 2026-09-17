@@ -10,12 +10,6 @@
             <i class="bi bi-credit-card"></i> Fee Management Dashboard
         </h1>
         <div>
-            <a href="{% url 'generate_fees' %}" class="btn btn-primary">
-                <i class="bi bi-plus-lg"></i> Generate Fees
-            </a>
-            <a href="{% url 'fee_reports' %}" class="btn btn-info">
-                <i class="bi bi-file-earmark-text"></i> Reports
-            </a>
             <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Dashboard
             </a>
@@ -153,30 +147,54 @@
                                 <th>Parent</th>
                                 <th>Term</th>
                                 <th>Amount</th>
+                                <th>Balance</th>
                                 <th>Due Date</th>
-                                <th>Days Overdue</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for fee in overdue_fees %}
                                 <tr>
-                                    <td>{{ fee.student.name }}</td>
+                                    <td>
+                                        <i class="bi bi-person-fill text-primary"></i>
+                                        {{ fee.student.name }}
+                                    </td>
                                     <td>{{ fee.student.parent.name }}</td>
                                     <td>{{ fee.term }} {{ fee.year }}</td>
-                                    <td>${{ fee.amount|floatformat:2 }}</td>
-                                    <td>{{ fee.due_date|date:"M d, Y" }}</td>
                                     <td>
-                                        <!-- ✅ FIXED: Include path -->
-                                        {% include 'transport/fee_status_badge.html' with status=fee.status %}
+                                        <strong>${{ fee.amount|floatformat:2 }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="text-danger fw-bold">
+                                            ${{ fee.get_balance_due|floatformat:2 }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {{ fee.due_date|date:"M d, Y" }}
+                                        <br>
+                                        <small class="text-danger">
+                                            <i class="bi bi-clock"></i>
+                                            {{ fee.due_date|timesince }} overdue
+                                        </small>
                                     </td>
                                     <td class="text-center">
-                                        <a href="{% url 'fee_detail' fee.id %}" class="btn btn-sm btn-outline-info">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="{% url 'record_payment' fee.id %}" class="btn btn-sm btn-outline-success">
-                                            <i class="bi bi-credit-card"></i>
-                                        </a>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'fee_detail' fee.id %}"
+                                               class="btn btn-outline-info"
+                                               title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'record_payment' fee.id %}"
+                                               class="btn btn-outline-success"
+                                               title="Record Payment">
+                                                <i class="bi bi-credit-card"></i>
+                                            </a>
+                                            <a href="{% url 'waive_fee' fee.id %}"
+                                               class="btn btn-outline-warning"
+                                               title="Waive Fee">
+                                                <i class="bi bi-check-circle"></i>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -201,6 +219,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Student</th>
+                                <th>Term</th>
                                 <th>Amount</th>
                                 <th>Method</th>
                                 <th>Date</th>
@@ -210,11 +229,25 @@
                         <tbody>
                             {% for payment in recent_payments %}
                                 <tr>
-                                    <td>{{ payment.fee.student.name }}</td>
-                                    <td><strong>${{ payment.amount|floatformat:2 }}</strong></td>
-                                    <td>{{ payment.get_payment_method_display }}</td>
+                                    <td>
+                                        <i class="bi bi-person-fill text-primary"></i>
+                                        {{ payment.fee.student.name }}
+                                    </td>
+                                    <td>{{ payment.fee.term }} {{ payment.fee.year }}</td>
+                                    <td>
+                                        <strong class="text-success">
+                                            ${{ payment.amount|floatformat:2 }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">
+                                            {{ payment.get_payment_method_display }}
+                                        </span>
+                                    </td>
                                     <td>{{ payment.payment_date|date:"M d, Y H:i" }}</td>
-                                    <td>{{ payment.recorded_by.username|default:"System" }}</td>
+                                    <td>
+                                        {{ payment.recorded_by.username|default:"System" }}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -222,9 +255,28 @@
                 </div>
             {% else %}
                 <div class="text-center py-4">
-                    <p class="text-muted">No recent payments.</p>
+                    <i class="bi bi-clock-history display-4 text-muted"></i>
+                    <p class="text-muted mt-2">No recent payments.</p>
                 </div>
             {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-4">
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'generate_fees' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Generate Fees
+            </a>
+            <a href="{% url 'fee_reports' %}" class="btn btn-info">
+                <i class="bi bi-file-earmark-text"></i> Reports
+            </a>
+            <a href="{% url 'manage_system' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-grid-3x3-gap-fill"></i> Management Hub
+            </a>
+            <button onclick="location.reload()" class="btn btn-outline-info">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
         </div>
     </div>
 {% endblock %}
