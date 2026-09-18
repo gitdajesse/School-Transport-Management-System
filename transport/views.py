@@ -2931,36 +2931,49 @@ def admin_fee_dashboard(request):
     today = timezone.now().date()
 
     # Get all fees
-    all_fees = Fee.objects.all()
-    total_fees = all_fees.count()
+    all_fees_qs = Fee.objects.all()
+    total_fees = all_fees_qs.count()
 
-    # Calculate financial summary
-    total_amount = all_fees.aggregate(total = Sum('amount'))['total'] or Decimal('0.00')
-    total_paid = all_fees.aggregate(total = Sum('paid_amount'))['total'] or Decimal('0.00')
+    # ✅ Exclude waived fees from financial totals
+    billable_fees = all_fees_qs.exclude(status='waived')
+
+    # Calculate financial summary (excluding waived fees)
+    total_amount = billable_fees.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    total_paid = billable_fees.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
     total_balance = total_amount - total_paid
 
-    # Count by status
-    pending_count = all_fees.filter(status = 'pending').count()
-    partial_count = all_fees.filter(status = 'partial').count()
-    paid_count = all_fees.filter(status = 'paid').count()
-    overdue_count = all_fees.filter(status = 'overdue').count()
-    waived_count = all_fees.filter(status = 'waived').count()
+    # Count by status (includes waived count)
+    pending_count = all_fees_qs.filter(status='pending').count()
+    partial_count = all_fees_qs.filter(status='partial').count()
+    paid_count = all_fees_qs.filter(status='paid').count()
+    overdue_count = all_fees_qs.filter(status='overdue').count()
+    waived_count = all_fees_qs.filter(status='waived').count()
 
-    # Get overdue fees with details
-    overdue_fees = all_fees.filter(status = 'overdue').select_related('student', 'student__parent')[:20]
+    # Get overdue fees with details (only if any exist)
+    overdue_fees = all_fees_qs.filter(status='overdue').select_related(
+        'student', 'student__parent'
+    )[:20]
 
-    # Recent activity
+    # ✅ Get ALL fees for the "All Fees" section (limit for performance)
+    all_fees = all_fees_qs.select_related(
+        'student', 'student__parent'
+    ).order_by('-year', '-term', 'student__name')[:50]
+
+    # Recent payments
     recent_payments = Payment.objects.all().order_by('-payment_date')[:5]
 
     # Current term
     current_term = get_current_term()
     current_year = timezone.now().year
 
-    # Fees for current term
-    current_term_fees = all_fees.filter(term = current_term, year = current_year)
-    current_term_total = current_term_fees.aggregate(total = Sum('amount'))['total'] or Decimal('0.00')
-    current_term_paid = current_term_fees.aggregate(total = Sum('paid_amount'))['total'] or Decimal('0.00')
+    # Fees for current term (excluding waived fees)
+    current_term_fees = billable_fees.filter(term=current_term, year=current_year)
+    current_term_total = current_term_fees.aggregate(total=Sum('amount'))['total'] or Decimal('0.00')
+    current_term_paid = current_term_fees.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
     current_term_balance = current_term_total - current_term_paid
+
+    # ✅ Collection rate based on billable fees only (excludes waived)
+    collection_rate = (total_paid / total_amount * 100) if total_amount > 0 else Decimal('0.00')
 
     context = {
         'total_fees': total_fees,
@@ -2973,13 +2986,14 @@ def admin_fee_dashboard(request):
         'overdue_count': overdue_count,
         'waived_count': waived_count,
         'overdue_fees': overdue_fees,
+        'all_fees': all_fees,
         'recent_payments': recent_payments,
         'current_term': current_term,
         'current_year': current_year,
         'current_term_total': current_term_total,
         'current_term_paid': current_term_paid,
         'current_term_balance': current_term_balance,
-        'collection_rate': (total_paid / total_amount * 100) if total_amount > 0 else 0,
+        'collection_rate': collection_rate,
     }
 
     return render(request, 'transport/admin_fee_dashboard.html', context)

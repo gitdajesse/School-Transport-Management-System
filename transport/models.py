@@ -325,7 +325,7 @@ class Fee(models.Model):
     term = models.CharField(max_length=20, choices=TERM_CHOICES)
     year = models.IntegerField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    due_date = models.DateField()  # ✅ This is already a DateField
+    due_date = models.DateField()
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     paid_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
@@ -351,20 +351,17 @@ class Fee(models.Model):
 
     def save(self, *args, **kwargs):
         """ Calculate balance before saving """
-        # ✅ Ensure amount and paid_amount are Decimal
         amount = Decimal(str(self.amount)) if self.amount else Decimal('0.00')
         paid_amount = Decimal(str(self.paid_amount)) if self.paid_amount else Decimal('0.00')
 
-        # ✅ Calculate balance
         self.balance = amount - paid_amount
 
-        # ✅ CRITICAL FIX: Skip status override if the fee is waived
+        # ✅ If waived, skip all status overrides
         if self.status == 'waived':
-            # Don't override the status for waived fees
             super().save(*args, **kwargs)
             return
 
-        # ✅ Update status based on balance (only for non-waived fees)
+        # ✅ Update status based on balance
         if self.balance <= Decimal('0.00') and paid_amount > Decimal('0.00'):
             self.status = 'paid'
             if not self.paid_at:
@@ -379,8 +376,30 @@ class Fee(models.Model):
     def is_paid(self):
         return self.status == 'paid'
 
+    def is_waived(self):
+        return self.status == 'waived'
+
     def is_overdue(self):
-        return self.status == 'overdue' or (self.due_date and timezone.now().date() > self.due_date and not self.is_paid())
+        """
+        ✅ FIXED: Excludes waived and paid fees.
+        """
+        # Waived fees are NEVER overdue
+        if self.status == 'waived':
+            return False
+
+        # Paid fees are NEVER overdue
+        if self.status == 'paid':
+            return False
+
+        # Explicitly marked as overdue
+        if self.status == 'overdue':
+            return True
+
+        # Pending or partial fees past due date
+        if self.due_date and timezone.now().date() > self.due_date:
+            return True
+
+        return False
 
     def get_balance_due(self):
         amount = Decimal(str(self.amount)) if self.amount else Decimal('0.00')

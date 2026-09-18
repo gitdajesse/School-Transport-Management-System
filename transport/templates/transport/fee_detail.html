@@ -60,7 +60,7 @@
 
                         <dt class="col-sm-5">Balance Due:</dt>
                         <dd class="col-sm-7">
-                            <span class="{% if balance_due > 0 %}text-danger{% else %}text-success{% endif %}">
+                            <span class="{% if balance_due > 0 and fee.status != 'waived' %}text-danger{% else %}text-success{% endif %}">
                                 <strong>${{ balance_due|floatformat:2 }}</strong>
                             </span>
                         </dd>
@@ -113,7 +113,8 @@
 
                     <div class="progress" style="height: 30px;">
                         <div class="progress-bar
-                            {% if fee.get_payment_percentage == 100 %}bg-success
+                            {% if fee.status == 'waived' %}bg-secondary
+                            {% elif fee.get_payment_percentage == 100 %}bg-success
                             {% elif fee.get_payment_percentage > 50 %}bg-info
                             {% elif fee.get_payment_percentage > 0 %}bg-warning
                             {% else %}bg-danger{% endif %}"
@@ -128,7 +129,9 @@
 
                     <div class="text-center mt-2">
                         <small class="text-muted">
-                            {% if fee.is_paid %}
+                            {% if fee.status == 'waived' %}
+                                🎓 Fee Waived - No Payment Required
+                            {% elif fee.is_paid %}
                                 ✅ Fully Paid
                             {% elif fee.is_overdue %}
                                 ⚠️ Overdue - Please pay immediately
@@ -139,7 +142,14 @@
                     </div>
 
                     <!-- Payment Actions -->
-                    {% if balance_due > 0 %}
+                    {% if fee.status == 'waived' %}
+                        <div class="alert alert-info mt-3 text-center mb-0">
+                            <i class="bi bi-check-circle"></i>
+                            <strong>This fee has been waived.</strong>
+                            <br>
+                            <small>No payment is required.</small>
+                        </div>
+                    {% elif balance_due > 0 %}
                         <div class="d-grid gap-2 mt-3">
                             {% if user.user_type == 'parent' %}
                                 <a href="{% url 'parent_pay_fee' fee.id %}" class="btn btn-success">
@@ -167,7 +177,7 @@
                 <i class="bi bi-clock-history"></i> Payment History
                 <span class="badge bg-primary ms-2">{{ payments|length }}</span>
             </h6>
-            {% if user.user_type == 'admin' and balance_due > 0 %}
+            {% if user.user_type == 'admin' and balance_due > 0 and fee.status != 'waived' %}
                 <a href="{% url 'record_payment' fee.id %}" class="btn btn-sm btn-success">
                     <i class="bi bi-credit-card"></i> Record Payment
                 </a>
@@ -239,16 +249,23 @@
             {% else %}
                 <div class="text-center py-4">
                     <i class="bi bi-clock-history display-4 text-muted"></i>
-                    <p class="text-muted mt-2">No payments recorded for this fee yet.</p>
-                    {% if balance_due > 0 %}
-                        {% if user.user_type == 'parent' %}
-                            <a href="{% url 'parent_pay_fee' fee.id %}" class="btn btn-primary">
-                                <i class="bi bi-credit-card"></i> Make First Payment
-                            </a>
-                        {% elif user.user_type == 'admin' %}
-                            <a href="{% url 'record_payment' fee.id %}" class="btn btn-primary">
-                                <i class="bi bi-credit-card"></i> Record First Payment
-                            </a>
+                    {% if fee.status == 'waived' %}
+                        <div class="alert alert-info mb-0 mt-2">
+                            <i class="bi bi-check-circle"></i>
+                            This fee has been waived. No payment is required.
+                        </div>
+                    {% else %}
+                        <p class="text-muted mt-2">No payments recorded for this fee yet.</p>
+                        {% if balance_due > 0 %}
+                            {% if user.user_type == 'parent' %}
+                                <a href="{% url 'parent_pay_fee' fee.id %}" class="btn btn-primary">
+                                    <i class="bi bi-credit-card"></i> Make First Payment
+                                </a>
+                            {% elif user.user_type == 'admin' %}
+                                <a href="{% url 'record_payment' fee.id %}" class="btn btn-primary">
+                                    <i class="bi bi-credit-card"></i> Record First Payment
+                                </a>
+                            {% endif %}
                         {% endif %}
                     {% endif %}
                 </div>
@@ -285,7 +302,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             const status = '{{ fee.status }}';
             if (status === 'pending' || status === 'overdue' || status === 'partial') {
-                // Refresh every 30 seconds to check for status updates
                 setTimeout(function() {
                     location.reload();
                 }, 30000);

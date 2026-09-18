@@ -1,8 +1,6 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}
-    Fee Management Dashboard
-{% endblock %}
+{% block title %}Fee Management Dashboard{% endblock %}
 
 {% block body %}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -10,6 +8,12 @@
             <i class="bi bi-credit-card"></i> Fee Management Dashboard
         </h1>
         <div>
+            <a href="{% url 'generate_fees' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Generate Fees
+            </a>
+            <a href="{% url 'fee_reports' %}" class="btn btn-info">
+                <i class="bi bi-file-earmark-text"></i> Reports
+            </a>
             <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Dashboard
             </a>
@@ -129,13 +133,90 @@
         </div>
     </div>
 
-    <!-- Overdue Fees -->
+    <!-- All Fees Section (Always shows Record Payment option) -->
+    <div class="card card-shadow mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+                <i class="bi bi-list"></i> All Fees
+                <span class="badge bg-primary ms-2">{{ total_fees }}</span>
+            </h6>
+            <a href="{% url 'fee_reports' %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-file-earmark-text"></i> View All Reports
+            </a>
+        </div>
+        <div class="card-body p-0">
+            {% if all_fees %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Student</th>
+                                <th>Term</th>
+                                <th>Amount</th>
+                                <th>Balance</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fee in all_fees %}
+                                <tr>
+                                    <td>
+                                        <i class="bi bi-person-fill text-primary"></i>
+                                        {{ fee.student.name }}
+                                    </td>
+                                    <td>{{ fee.term }} {{ fee.year }}</td>
+                                    <td>${{ fee.amount|floatformat:2 }}</td>
+                                    <td>
+                                        <strong class="{% if fee.get_balance_due > 0 and fee.status != 'waived' %}text-danger{% else %}text-success{% endif %}">
+                                            ${{ fee.get_balance_due|floatformat:2 }}
+                                        </strong>
+                                    </td>
+                                    <td>{{ fee.due_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        {% include 'transport/fee_status_badge.html' with status=fee.status %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'fee_detail' fee.id %}"
+                                               class="btn btn-outline-info"
+                                               title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if fee.get_balance_due > 0 and fee.status != 'waived' %}
+                                                <a href="{% url 'record_payment' fee.id %}"
+                                                   class="btn btn-outline-success"
+                                                   title="Record Payment">
+                                                    <i class="bi bi-credit-card"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-receipt display-4 text-muted"></i>
+                    <p class="text-muted mt-2">No fees have been generated yet.</p>
+                    <a href="{% url 'generate_fees' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-lg"></i> Generate Fees
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Overdue Fees (only shows if there ARE overdue fees) -->
     {% if overdue_fees %}
         <div class="card card-shadow border-danger mb-4">
             <div class="card-header bg-danger text-white">
                 <h6 class="mb-0">
                     <i class="bi bi-exclamation-triangle"></i> Overdue Fees
-                    <span class="badge bg-light text-danger ms-2">{{ overdue_fees|length }}</span>
+                    <span class="badge bg-light text-danger ms-2">{{ overdue_count }}</span>
                 </h6>
             </div>
             <div class="card-body p-0">
