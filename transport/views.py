@@ -3176,14 +3176,14 @@ def send_fee_generation_notifications(term, year):
             print(f"No user for parent of {fee.student.name}")
             continue
 
-            send_fee_notification(
-                parent.user,
-                'new_fee',
-                fee.student,
-                fee.amount,
-                fee
-            )
-            notifications_sent += 1
+        send_fee_notification(
+            parent.user,
+            'new_fee',
+            fee.student,
+            fee.amount,
+            fee
+        )
+        notifications_sent += 1
 
     print(f"Sent {notifications_sent} fee generation notifications for {term} {year}")
 
