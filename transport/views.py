@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from decimal import Decimal
 import calendar
 
-from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop, Fee, Payment
+from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop, Fee, Payment, NotifcationPreference, AuditLog
 
 
 # Create your views here.

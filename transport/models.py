@@ -215,46 +215,234 @@ class Attendance(models.Model):
 
 
 class Notification(models.Model):
+    """
+    Enhanced notification model with preferences, delivery tracking,
+    and audit support.
+    """
+
     NOTIFICATION_TYPES = (
         ('attendance', 'Attendance Update'),
         ('fee', 'Fee Reminder'),
         ('route', 'Route Change'),
         ('bus', 'Bus Assignment'),
+        ('student', 'Student Update'),
         ('system', 'System Alert'),
         ('general', 'General Announcement'),
     )
 
     DELIVERY_METHODS = (
+        ('app', 'In-App'),
         ('email', 'Email'),
         ('sms', 'SMS'),
-        ('app', 'In-App'),
     )
 
-    is_automatic = models.BooleanField(default = True, help_text = "Was this triggered automatically by the system?")
-    recipient = models.ForeignKey(User, on_delete = models.CASCADE, related_name = 'notifications')
-    notification_type = models.CharField(max_length = 20, choices = NOTIFICATION_TYPES)
-    delivery_method = models.CharField(max_length = 10, choices = DELIVERY_METHODS)
-    subject = models.CharField(max_length = 200)
+    PRIORITY_LEVELS = (
+        ('low', 'Low'),
+        ('normal', 'Normal'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    )
+
+    # Core fields
+    recipient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notifications'
+    )
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    delivery_method = models.CharField(max_length=10, choices=DELIVERY_METHODS, default='app')
+    priority = models.CharField(max_length=10, choices=PRIORITY_LEVELS, default='normal')
+
+    # Content
+    subject = models.CharField(max_length=200)
     message = models.TextField()
-    read = models.BooleanField(default = False)
-    delivered = models.BooleanField(default = False)
-    created_at = models.DateTimeField(auto_now_add = True)
-    sent_at = models.DateTimeField(null = True, blank = True)
+
+    # Optional reference to related objects (for deep linking)
+    related_student = models.ForeignKey(
+        'Student',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='notifications'
+    )
+    related_fee = models.ForeignKey(
+        'Fee',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='notifications'
+    )
+    related_attendance = models.ForeignKey(
+        'Attendance',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='notifications'
+    )
+
+    # Status
+    read = models.BooleanField(default=False)
+    delivered = models.BooleanField(default=False)
+    is_automatic = models.BooleanField(default=True)
+
+    # Optional action URL (for deep linking)
+    action_url = models.CharField(max_length=500, blank=True, null=True)
+    action_text = models.CharField(max_length=100, blank=True, null=True)
+
+    # Delivery tracking
+    delivery_error = models.TextField(blank=True, null=True)
+    delivery_attempts = models.IntegerField(default=0)
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['recipient', 'read']),
+            models.Index(fields=['recipient', 'notification_type']),
+            models.Index(fields=['created_at']),
+        ]
 
     def __str__(self):
         return f"{self.recipient.username} - {self.subject[:50]}"
 
     def mark_as_read(self):
-        self.read = True
-        self.save()
+        """Mark notification as read"""
+        if not self.read:
+            self.read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['read', 'read_at'])
 
     def mark_as_delivered(self):
+        """Mark notification as delivered"""
         self.delivered = True
         self.sent_at = timezone.now()
-        self.save()
+        self.save(update_fields=['delivered', 'sent_at'])
+
+    def mark_delivery_error(self, error_message):
+        """Track delivery error"""
+        self.delivery_error = error_message
+        self.delivery_attempts += 1
+        self.save(update_fields=['delivery_error', 'delivery_attempts'])
+
+    @classmethod
+    def get_unread_count(cls, user):
+        """Get unread count for a user"""
+        return cls.objects.filter(recipient=user, read=False).count()
+
+    @classmethod
+    def get_recent(cls, user, limit=10):
+        """Get recent notifications for a user"""
+        return cls.objects.filter(recipient=user)[:limit]
+
+
+class NotificationPreference(models.Model):
+    """
+    User preferences for notifications.
+    Allows parents to control which notifications they receive.
+    """
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notification_preferences'
+    )
+
+    # Master switches
+    email_enabled = models.BooleanField(default=True)
+    sms_enabled = models.BooleanField(default=False)
+    in_app_enabled = models.BooleanField(default=True)
+
+    # Per-type preferences
+    attendance_notifications = models.BooleanField(default=True)
+    fee_notifications = models.BooleanField(default=True)
+    route_notifications = models.BooleanField(default=True)
+    bus_notifications = models.BooleanField(default=True)
+    system_notifications = models.BooleanField(default=True)
+    general_notifications = models.BooleanField(default=True)
+
+    # Digest option
+    digest_mode = models.BooleanField(
+        default=False,
+        help_text="Receive a daily digest instead of individual notifications"
+    )
+
+    # Quiet hours
+    quiet_hours_start = models.TimeField(null=True, blank=True)
+    quiet_hours_end = models.TimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Preferences for {self.user.username}"
+
+    def should_send(self, notification_type):
+        """Check if a notification of a given type should be sent"""
+        type_map = {
+            'attendance': self.attendance_notifications,
+            'fee': self.fee_notifications,
+            'route': self.route_notifications,
+            'bus': self.bus_notifications,
+            'system': self.system_notifications,
+            'general': self.general_notifications,
+        }
+        return type_map.get(notification_type, True)
+
+    def is_quiet_hours(self):
+        """Check if current time is within quiet hours"""
+        if not self.quiet_hours_start or not self.quiet_hours_end:
+            return False
+
+        now = timezone.now().time()
+
+        # Handle case where quiet hours cross midnight
+        if self.quiet_hours_start <= self.quiet_hours_end:
+            return self.quiet_hours_start <= now <= self.quiet_hours_end
+        else:
+            return now >= self.quiet_hours_start or now <= self.quiet_hours_end
+
+
+class AuditLog(models.Model):
+    """
+    Track admin and system actions for accountability.
+    """
+
+    ACTION_TYPES = (
+        ('create', 'Create'),
+        ('update', 'Update'),
+        ('delete', 'Delete'),
+        ('deactivate', 'Deactivate'),
+        ('reactivate', 'Reactivate'),
+        ('waive', 'Waive'),
+        ('payment', 'Payment'),
+        ('login', 'Login'),
+        ('logout', 'Logout'),
+    )
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='audit_logs'
+    )
+    action = models.CharField(max_length=20, choices=ACTION_TYPES)
+    model_name = models.CharField(max_length=100)
+    object_id = models.IntegerField(null=True, blank=True)
+    description = models.TextField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, null=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        indexes = [
+            models.Index(fields=['user', 'timestamp']),
+            models.Index(fields=['model_name', 'object_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username if self.user else 'System'} - {self.action} - {self.model_name} - {self.timestamp}"
 
 
 class RouteAssignment(models.Model):
