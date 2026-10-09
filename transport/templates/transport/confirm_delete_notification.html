@@ -1,0 +1,44 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Confirm Delete{% endblock %}
+
+{% block body %}
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card card-shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i> Confirm Delete
+                    </h5>
+                </div>
+                <div class="card-body text-center">
+                    <div class="display-1 text-danger mb-3">
+                        <i class="bi bi-trash"></i>
+                    </div>
+
+                    <h4>Delete this notification?</h4>
+
+                    <div class="alert alert-info mt-3">
+                        <strong>Subject:</strong> {{ notification.subject }}
+                        <br>
+                        <strong>Type:</strong> {{ notification.get_notification_type_display }}
+                        <br>
+                        <strong>Received:</strong> {{ notification.created_at|date:"M d, Y H:i" }}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+                        <a href="{% url 'notification_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <form method="POST" action="{% url 'delete_notification' notification.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Yes, Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

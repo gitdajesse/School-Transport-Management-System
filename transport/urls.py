@@ -46,6 +46,9 @@ urlpatterns = [
     path('notifications/detail/<int:notification_id>/', views.notification_detail, name = 'notification_detail'),
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name = 'mark_all_notifications_read'),
     path('notifications/mark-read/<int:notification_id>/', views.mark_notification_read, name = 'mark_notification_read'),
+    path('notifications/delete/<int:notification_id>/', views.delete_notification, name = 'delete_notification'),
+    path('notifications/delete-all-read/', views.delete_all_read_notifications, name = 'delete_all_read_notifications'),
+    path('notifications/badge-count/', views.notification_badge_count, name = 'notification_badge_count'),
 
     # Attendance management URLs
     path('manage-attendance/', views.manage_attendance, name = 'manage_attendance'),

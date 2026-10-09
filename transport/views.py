@@ -1293,6 +1293,44 @@ def parent_notifications(request):
 
 
 @login_required
+def notification_list(request):
+    """ View all notifications with filtering """
+    notifications = Notification.objects.filter(recipient = request.user)
+
+    # Filter by type
+    filter_type = request.GET.get('type', '')
+    if filter_type:
+        notifications = notifications.filter(notification_type = filter_type)
+
+    # Filter by read status
+    filter_read = request.GET.get('read', '')
+    if filter_read == 'unread':
+        notifications = notifications.filter(read = False)
+    elif filter_read == 'read':
+        notifications = notifications.filter(read  =True)
+
+    # Search
+    search = request.GET.get('search', '')
+    if search:
+        notifications = notifications.filter(Q(subject__icontains = search) | Q(message__icontains = search))
+    notifications = notifications.order_by('-created_at')
+
+    # Statistics
+    unread_count = Notification.objects.filter(recipient = request.user, read = False).count()
+
+    context = {
+        'notifications': notifications[:100],  # Limit for performance
+        'unread_count': unread_count,
+        'total_count': notifications.count(),
+        'filter_type': filter_type,
+        'filter_read': filter_read,
+        'search': search,
+        'notification_types': Notification.NOTIFICATION_TYPES,
+    }
+    return render(request, 'transport/notification_list.html', context)
+
+
+@login_required
 def notification_detail(request, notification_id):
     """ View a specific notification """
     notification = get_object_or_404(Notification, id = notification_id, recipient = request.user)
@@ -1315,7 +1353,7 @@ def mark_all_notifications_read(request):
         messages.error(request, 'Access denied.')
         return redirect('index')
 
-    updated = Notification.objects.filter(recipient = request.user, read = False).update(read = True)
+    updated = Notification.objects.filter(recipient = request.user, read = False).update(read = True, read_at = timezone.now())
 
     messages.success(request, f'All notifications marked as read ({updated} updated).')
     return redirect('parent_notifications')
@@ -1331,6 +1369,37 @@ def mark_notification_read(request, notification_id):
 
     messages.success(request, 'Notification marked as read.')
     return redirect('parent_notifications')
+
+
+@login_required
+def delete_notification(request, notification_id):
+    """ Delete a notification """
+    notification = get_object_or_404(Notification, id - notification_id, recipient = request.user)
+
+    if request.method == 'POST':
+        notification.delete()
+        messages.success(request, 'Notification deleted.')
+        return redirect('notification_list')
+
+    context = {'notification': notification}
+    return render(request, 'transport/confirm_delete_notification.html', context)
+
+
+@login_required
+def delete_all_read_notifications(request):
+    """ Delete all read notifications """
+    if request.method == 'POST':
+        deleted, _  = Notification.objects.filter(recipient = request.user, read = True).delete()
+        messages.success(request, f'{deleted} notifications deleted.')
+    return redirect('notification_list')
+
+
+@login_required
+def notification_badge_count(request):
+    """ AJAX endpoint for unread count """
+    count = Notification.objects.filter(recipient = request.user, read = False).count()
+    return JsonResponse({'count': count})
+
 
 @login_required
 def manage_attendance(request):
