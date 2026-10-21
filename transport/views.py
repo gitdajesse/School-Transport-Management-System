@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from decimal import Decimal
 import calendar
 
-from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop, Fee, Payment, NotifcationPreference, AuditLog
+from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop, Fee, Payment, NotificationPreference, AuditLog
 
 
 # Create your views here.
@@ -1374,7 +1374,7 @@ def mark_notification_read(request, notification_id):
 @login_required
 def delete_notification(request, notification_id):
     """ Delete a notification """
-    notification = get_object_or_404(Notification, id - notification_id, recipient = request.user)
+    notification = get_object_or_404(Notification, id = notification_id, recipient = request.user)
 
     if request.method == 'POST':
         notification.delete()
@@ -1400,6 +1400,59 @@ def notification_badge_count(request):
     count = Notification.objects.filter(recipient = request.user, read = False).count()
     return JsonResponse({'count': count})
 
+
+@login_required
+def notification_preferences(request):
+    """ View and update notification preferences """
+    prefs, _ = NotificationPreference.objects.get_or_create(user = request.user)
+
+    if request.method == 'POST':
+        prefs.email_enabled = request.POST.get('email_enabled') == 'on'
+        prefs.sms_enabled = request.POST.get('sms_enabled') == 'on'
+        prefs.in_app_enabled = request.POST.get('in_app_enabled') == 'on'
+        prefs.attendance_notifications = request.POST.get('attendance_notifications') == 'on'
+        prefs.fee_notifications = request.POST.get('fee_notifications') == 'on'
+        prefs.route_notifications = request.POST.get('route_notifications') == 'on'
+        prefs.bus_notifications = request.POST.get('bus_notifications') == 'on'
+        prefs.system_notifications = request.POST.get('system_notifications') == 'on'
+        prefs.general_notifications = request.POST.get('general_notifications') == 'on'
+        prefs.digest_mode = request.POST.get('digest_mode') == 'on'
+
+        # Quite hours
+        qh_start = request.POST.get('quiet_hours_start')
+        qh_end = request.POST.get('quiet_hours_end')
+        prefs.quiet_hours_start = qh_start if qh_start else None
+        prefs.qh_hours_end = qh_end if qh_end else None
+
+
+        prefs.save()
+        messages.success(request, 'Notification preferences updated.')
+        return redirect('notifications_preferences')
+
+    context = {
+        'prefs': prefs
+    }
+    return render(request, 'transport/notification_preferences.html', context)
+
+
+@login_required
+def admin_activity_feed(request):
+    """ Admin view of recent system activity """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied')
+        return redirect('index')
+
+    # Get recent notifications system wide
+    recent_notifications = Notification.objects.all().order_by('-created_at')[:50]
+
+    # Get recent audit logs
+    recent_logs = AuditLog.objects.all().order_by('-timestamp')[:50]
+
+    context = {
+        'recent_notifications': recent_notifications,
+        'recent_logs': recent_logs
+    }
+    return render(request, 'transport/admin_activity_feed.html', context)
 
 @login_required
 def manage_attendance(request):

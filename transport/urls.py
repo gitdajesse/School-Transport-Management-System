@@ -49,6 +49,7 @@ urlpatterns = [
     path('notifications/delete/<int:notification_id>/', views.delete_notification, name = 'delete_notification'),
     path('notifications/delete-all-read/', views.delete_all_read_notifications, name = 'delete_all_read_notifications'),
     path('notifications/badge-count/', views.notification_badge_count, name = 'notification_badge_count'),
+    path('notifications/preferences/', views.notification_preferences, name = 'notification_preferences'),
 
     # Attendance management URLs
     path('manage-attendance/', views.manage_attendance, name = 'manage_attendance'),
@@ -83,6 +84,7 @@ urlpatterns = [
     path('fees/pay/<int:fee_id>/', views.parent_pay_fee, name = 'parent_pay_fee'),
 
     # Admin fee URLs
+    path('admin/activity-feed/', views.admin_activity_feed, name = 'admin_activity_feed'),
     path('fees/admin/', views.admin_fee_dashboard, name = 'admin_fee_dashboard'),
     path('fees/generate/', views.generate_fees, name = 'generate_fees'),
     path('fees/record-payment/<int:fee_id>/', views.record_payment, name = 'record_payment'),
