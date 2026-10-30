@@ -1402,7 +1402,7 @@ def notification_badge_count(request):
 
 
 @login_required
-def notification_preferences(request):
+def notifications_preferences(request):
     """ View and update notification preferences """
     prefs, _ = NotificationPreference.objects.get_or_create(user = request.user)
 

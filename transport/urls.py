@@ -7,6 +7,7 @@ urlpatterns = [
     path('register/', views.register, name = 'register'),
     path('login/', views.login_view, name = 'login'),
     path('logout/', views.logout_view, name = 'logout'),
+    path('notification-list/', views.notification_list, name = 'notification_list'),
 
     # Dashboard URLs
     path('parent-dashboard/', views.parent_dashboard, name = 'parent_dashboard'),
@@ -49,7 +50,7 @@ urlpatterns = [
     path('notifications/delete/<int:notification_id>/', views.delete_notification, name = 'delete_notification'),
     path('notifications/delete-all-read/', views.delete_all_read_notifications, name = 'delete_all_read_notifications'),
     path('notifications/badge-count/', views.notification_badge_count, name = 'notification_badge_count'),
-    path('notifications/preferences/', views.notification_preferences, name = 'notification_preferences'),
+    path('notifications/preferences/', views.notifications_preferences, name = 'notifications_preferences'),
 
     # Attendance management URLs
     path('manage-attendance/', views.manage_attendance, name = 'manage_attendance'),
