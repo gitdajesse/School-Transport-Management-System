@@ -11,12 +11,6 @@
             <a href="{% url 'manage_payment' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Hub
             </a>
-            <a href="{% url 'parent_notifications' %}" class="btn btn-outline-info">
-                <i class="bi bi-bell"></i> Notifications
-                {% if unread_count > 0 %}
-                    <span class="badge bg-danger">{{ unread_count }}</span>
-                {% endif %}
-            </a>
         </div>
     </div>
 
