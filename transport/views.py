@@ -265,7 +265,7 @@ def admin_dashboard(request):
 
         # Students without a bus
         students_no_bus = Student.objects.filter(is_active = True, bus__isnull = True).count()
-        if studens_no_bus > 0:
+        if students_no_bus > 0:
             alerts.append({
                 'type': 'warning',
                 'icon': 'bi-bus-front',
@@ -276,7 +276,7 @@ def admin_dashboard(request):
 
         # Students without a parent
         students_no_parent = Student.objects.filter(is_active = True, parent__isnull = True).count()
-        if studens_no_parent > 0:
+        if students_no_parent > 0:
             alerts.append({
                 'type': 'danger',
                 'icon': 'bi-person-x',
@@ -317,7 +317,7 @@ def admin_dashboard(request):
             })
 
         # Students not picked up today
-        if students_pending > 0 and total_attendance.exists():
+        if students_pending > 0 and today_attendance.exists():
             alerts.append({
                 'type': 'warning',
                 'icon': 'bi-clock',
