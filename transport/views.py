@@ -4,11 +4,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import IntegrityError
 from django.utils import timezone
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, Avg, F
 from datetime import datetime, timedelta
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
+from django.core.paginator import Paginator
+from django.db.models.functions import TrunDate, TruncWeek, TruncMonth
 import calendar
+import csv
 
 from .models import User, Parent, Bus, Student, Assistant, Attendance, Notification, RouteAssignment, Route, Stop, Fee, Payment, NotificationPreference, AuditLog
 
@@ -199,10 +202,134 @@ def assistant_dashboard(request):
 
 @login_required
 def admin_dashboard(request):
-    """ Dashboard for the admin to have an overview of the system """
+    """ Comprehensive admin dashboard witjh key metrics and alerts. """
     if request.user.user_type != 'admin':
         messages.error(request, 'Access denied. You are not an admin.')
         return redirect('index')
+
+    today = timezone.now().date()
+    start_of_week = today - timedelta(days = today.weekday())
+    start_of_month = today.replace(day = 1)
+
+    # Student metrics
+    total_students = Student.objects.filter(is_active = True).count()
+    total_parents = Parent.objects.count()
+    total_buses = Bus.objects.filter(is_active = True).count()
+    total_assistants = Assistant.objects.filter(is_active = True).count()
+
+    # Attendnace metrics
+    today_attendance = Attendance.objects.filter(date = today)
+    students_picked_up = today_attendance.filter(
+        status__in = ['picked_up', 'dropped_off']
+    ).count()
+    students_absent = today_attendance.filter(status = 'absent').count()
+    students_late = today_attendance.filter(status = 'late').count()
+    students_pending = total_students - today_attendance.count()
+
+    # Attendance rate
+    attendance_rate = (students_picked_up / total_students * 100) if total_students > 0 else 0
+
+    # Financial metrics
+    all_fees = Fee.objects.all()
+    billable_fees = all_fees.exclude(status = 'waived')
+
+    total_fee_amount = billable_fees.aggregate(total = Sum('amount'))['total'] or Decimal('0.00')
+    total_collected = billable_fees.aggregate(total= Sum('paid_amount'))['total'] or Decimal('0.00')
+    total_outstanding = total_fee_amount - total_collected
+
+    # Overdue fees
+    overdue_fees = all_fees.filter(status = 'overdue')
+    overdue_count = overdue_fees.count()
+    overdue_amount = overdue_fees.aggregate(total = Sum('balance'))['total'] or Decimal('0.00')
+
+    # Collection rate
+    collection_rate = (total_collected / total_fee_amount * 100) if total_fee_amount > 0 else 0
+
+    # Bus_capacity
+    bus_stats = []
+
+    for bus in Bus.objects.filter(is_active = True):
+        student_count = Student.objects.filter(bus = bus, is_active = True).count()
+        capacity_used = (student_count / bus.capacity * 100) if bus.capacity > 0 else 0
+        bus_stats.append({
+            'bus': bus,
+            'student_count': student_count,
+            'capacity_used': round(capacity_used, 1),
+            'is_full': capacity_used >= 90,
+        })
+
+        buses_at_capacity = sum(1 for b in bus_stats if b['is_full'])
+
+        # Alerts
+        alerts = []
+
+        # Students without a bus
+        students_no_bus = Student.objects.filter(is_active = True, bus__isnull = True).count()
+        if studens_no_bus > 0:
+            alerts.append({
+                'type': 'warning',
+                'icon': 'bi-bus-front',
+                'message': f'{students_no_bus} students have no bus assigned',
+                'link': '/students/',
+                'action': 'Assign Buses',
+            })
+
+        # Students without a parent
+        students_no_parent = Student.objects.filter(is_active = True, parent__isnull = True).count()
+        if studens_no_parent > 0:
+            alerts.append({
+                'type': 'danger',
+                'icon': 'bi-person-x',
+                'message': f'{students_no_parent} students have no parent assigned',
+                'link': '/students/',
+                'action': 'Fix immediately',
+            })
+
+        # Overdue fees
+        if overdue_count > 0:
+            alerts.append({
+                'type': 'danger',
+                'icon': 'bi-credit-card',
+                'message': f'{overdue_count} fees overdue (${overdue_amount:,.2f})',
+                'link': '/admin/fees/',
+                'action': 'View Overdue'
+            })
+
+        # Buses at capacity
+        if buses_at_capacity > 0:
+            alerts.append({
+                'type': 'warning',
+                'icon': 'bi-bus-front',
+                'message': f'{buses_at_capacity} bues at or near capacity',
+                'link': '/buses/',
+                'action': 'Manage Buses'
+            })
+
+        # Assistants without a bus
+        assistants_no_bus = Assistant.objects.filter(is_active = True, bus__isnull = True).count()
+        if assistants_no_bus > 0:
+            alerts.append({
+                'type': 'info',
+                'icon': 'bi-person-badge',
+                'message': f'{assistants_no_bus} assistants without bus assignment',
+                'link': '/assistants/',
+                'action': 'Assign Assistants'
+            })
+
+        # Students not picked up today
+        if students_pending > 0 and total_attendance.exists():
+            alerts.append({
+                'type': 'warning',
+                'icon': 'bi-clock',
+                'message': f'{students_pending} students not yet picked up today',
+                'link': '/attendance/admin/',
+                'action': 'View Attendance'
+            })
+
+        # Recent Activity
+        """ Continue to build for tomorrow """
+
+
     else:
         return render (request, 'transport/admin_dashboard.html')
 
