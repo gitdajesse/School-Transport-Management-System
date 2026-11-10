@@ -1,51 +1,379 @@
 {% extends 'transport/layout.html' %}
 
-{% block title %}
-    Admin Dashboard
-{% endblock %}
+{% block title %}Admin Dashboard{% endblock %}
 
 {% block body %}
-    <h1>
-        Admin Dashboard
-    </h1>
-    <p>
-        Welcome, {{ user.username }}
-    </p>
-    <p>
-        You are logged in as an Admin.
-    </p>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title mb-0">
+                <i class="bi bi-speedometer2"></i> Admin Dashboard
+            </h1>
+            <p class="text-muted mb-0">
+                Welcome back, {{ user.username }}! Here's what's happening today.
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'reports_hub' %}" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-text"></i> All Reports
+            </a>
+            <a href="{% url 'admin_fee_dashboard' %}" class="btn btn-outline-success">
+                <i class="bi bi-credit-card"></i> Fees
+            </a>
+        </div>
+    </div>
 
-    <div class="row">
-        <!-- Quick Links -->
-        <div class="col-lg-6">
-            <div class="card card-shadow">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-link"></i>
-                        Quick Links
-                    </h5>
+    <!-- Alerts Section -->
+    {% if alerts %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <h6 class="text-muted mb-2">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Alerts & Attention Needed ({{ alert_count }})
+                </h6>
+                {% for alert in alerts %}
+                    <div class="alert alert-{{ alert.type }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                        <i class="bi {{ alert.icon }} fs-4 me-3"></i>
+                        <div class="flex-grow-1">{{ alert.message }}</div>
+                        <a href="{{ alert.link }}" class="btn btn-sm btn-outline-dark me-2">
+                            {{ alert.action }} <i class="bi bi-arrow-right"></i>
+                        </a>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Key Metrics Row 1 -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-6">
+            <div class="card card-shadow border-primary h-100">
+                <div class="card-body text-center">
+                    <div class="display-6 text-primary mb-2">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h3 class="mb-0">{{ total_students }}</h3>
+                    <small class="text-muted">Active Students</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card card-shadow border-info h-100">
+                <div class="card-body text-center">
+                    <div class="display-6 text-info mb-2">
+                        <i class="bi bi-bus-front"></i>
+                    </div>
+                    <h3 class="mb-0">{{ total_buses }}</h3>
+                    <small class="text-muted">Active Buses</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card card-shadow border-success h-100">
+                <div class="card-body text-center">
+                    <div class="display-6 text-success mb-2">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <h3 class="mb-0">{{ total_assistants }}</h3>
+                    <small class="text-muted">Assistants</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card card-shadow border-warning h-100">
+                <div class="card-body text-center">
+                    <div class="display-6 text-warning mb-2">
+                        <i class="bi bi-person-heart"></i>
+                    </div>
+                    <h3 class="mb-0">{{ total_parents }}</h3>
+                    <small class="text-muted">Parents</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance & Financial Row -->
+    <div class="row g-3 mb-4">
+        <!-- Today's Attendance -->
+        <div class="col-md-6">
+            <div class="card card-shadow h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clipboard-check text-success"></i>
+                        Today's Attendance
+                        <span class="badge bg-success ms-2">{{ attendance_rate }}%</span>
+                    </h6>
                 </div>
                 <div class="card-body">
-                    <div class="list-group">
-                        <a href="{% url 'system_overview' %}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-card-checklist"></i>
-                            System Overview
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <h4 class="text-success mb-0">{{ students_picked_up }}</h4>
+                            <small class="text-muted">Picked Up</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-danger mb-0">{{ students_absent }}</h4>
+                            <small class="text-muted">Absent</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-warning mb-0">{{ students_pending }}</h4>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-success"
+                             style="width: {{ attendance_rate }}%;"
+                             role="progressbar">
+                            {{ attendance_rate }}%
+                        </div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <a href="{% url 'admin_attendance' %}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-eye"></i> View Attendance
                         </a>
-                        <a href="{% url 'admin_attendance_dashboard' %}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-people"></i>
-                            Student Attendance
-                        </a>
-                        <a href="{% url 'admin_fee_dashboard' %}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-currency-dollar"></i>
-                            Fee Management
-                        </a>
-                        <a href="{% url 'manage_system' %}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-grid-3x3-gap-fill"></i>
-                            Management Hub
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary -->
+        <div class="col-md-6">
+            <div class="card card-shadow h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-credit-card text-primary"></i>
+                        Financial Summary
+                        <span class="badge bg-primary ms-2">{{ collection_rate }}%</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <h4 class="text-primary mb-0">${{ total_fee_amount|floatformat:0 }}</h4>
+                            <small class="text-muted">Total Fees</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success mb-0">${{ total_collected|floatformat:0 }}</h4>
+                            <small class="text-muted">Collected</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-danger mb-0">${{ total_outstanding|floatformat:0 }}</h4>
+                            <small class="text-muted">Outstanding</small>
+                        </div>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-primary"
+                             style="width: {{ collection_rate }}%;"
+                             role="progressbar">
+                            {{ collection_rate }}%
+                        </div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <a href="{% url 'admin_fee_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View Fees
                         </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Attendance Chart & Bus Status -->
+    <div class="row g-3 mb-4">
+        <!-- Chart -->
+        <div class="col-md-7">
+            <div class="card card-shadow h-100">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up"></i> Last 7 Days Attendance
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 200px; display: flex; align-items: flex-end; gap: 10px;">
+                        {% for day in chart_data %}
+                            <div class="text-center flex-grow-1">
+                                <div class="d-flex flex-column justify-content-end" style="height: 180px;">
+                                    <div class="bg-success rounded-top"
+                                         style="height: {% if total_students > 0 %}{% widthratio day.present total_students 180 %}{% else %}0{% endif %}px;"
+                                         title="{{ day.present }} present">
+                                    </div>
+                                    <div class="bg-danger"
+                                         style="height: {% if total_students > 0 %}{% widthratio day.absent total_students 180 %}{% else %}0{% endif %}px;"
+                                         title="{{ day.absent }} absent">
+                                    </div>
+                                </div>
+                                <small class="text-muted d-block mt-2">{{ day.date }}</small>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bus Status -->
+        <div class="col-md-5">
+            <div class="card card-shadow h-100">
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <h6 class="mb-0">
+                        <i class="bi bi-bus-front"></i> Bus Capacity
+                    </h6>
+                    <a href="{% url 'bus_list' %}" class="btn btn-sm btn-outline-info">Manage</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 200px;">
+                        <table class="table table-sm mb-0">
+                            <tbody>
+                                {% for item in bus_stats %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ item.bus.registration }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ item.bus.route_name }}</small>
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="badge {% if item.is_full %}bg-danger{% elif item.capacity_used > 70 %}bg-warning{% else %}bg-success{% endif %}">
+                                                {{ item.student_count }}/{{ item.bus.capacity }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted py-3">
+                                            No buses registered
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row g-3">
+        <!-- Recent Attendance -->
+        <div class="col-md-6">
+            <div class="card card-shadow">
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <h6 class="mb-0">
+                        <i class="bi bi-clock-history text-success"></i> Recent Attendance
+                    </h6>
+                    <a href="{% url 'admin_attendance' %}" class="btn btn-sm btn-outline-success">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_attendance %}
+                        <div class="list-group list-group-flush">
+                            {% for record in recent_attendance %}
+                                <div class="list-group-item py-2">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>{{ record.student.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ record.bus.registration }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge
+                                                {% if record.status == 'picked_up' %}bg-success
+                                                {% elif record.status == 'dropped_off' %}bg-info
+                                                {% elif record.status == 'absent' %}bg-danger
+                                                {% else %}bg-warning{% endif %}">
+                                                {{ record.get_status_display }}
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">{{ record.recorded_at|timesince }} ago</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-6"></i>
+                            <p class="mt-2">No attendance today</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Payments -->
+        <div class="col-md-6">
+            <div class="card card-shadow">
+                <div class="card-header bg-white d-flex justify-content-between">
+                    <h6 class="mb-0">
+                        <i class="bi bi-cash text-primary"></i> Recent Payments
+                    </h6>
+                    <a href="{% url 'admin_fee_dashboard' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_payments %}
+                        <div class="list-group list-group-flush">
+                            {% for payment in recent_payments %}
+                                <div class="list-group-item py-2">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <strong>{{ payment.fee.student.name }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ payment.fee.term }} {{ payment.fee.year }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <strong class="text-success">${{ payment.amount|floatformat:2 }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ payment.payment_date|timesince }} ago</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox display-6"></i>
+                            <p class="mt-2">No recent payments</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card card-shadow">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'generate_fees' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-lg"></i> Generate Fees
+                        </a>
+                        <a href="{% url 'manage_students' %}" class="btn btn-success">
+                            <i class="bi bi-people"></i> Manage Students
+                        </a>
+                        <a href="{% url 'bus_list' %}" class="btn btn-info">
+                            <i class="bi bi-bus-front"></i> Manage Buses
+                        </a>
+                        <a href="{% url 'reports_hub' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-file-earmark-text"></i> Reports Hub
+                        </a>
+                        <a href="{% url 'manage_system' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-grid-3x3-gap-fill"></i> Management Hub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-refresh stats -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Refresh dashboard every 5 minutes
+            setTimeout(function() {
+                location.reload();
+            }, 300000);
+        });
+    </script>
 {% endblock %}

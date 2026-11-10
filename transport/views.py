@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse, HttpResponse
 from decimal import Decimal
 from django.core.paginator import Paginator
-from django.db.models.functions import TrunDate, TruncWeek, TruncMonth
+from django.db.models.functions import TruncDate, TruncWeek, TruncMonth
 import calendar
 import csv
 
@@ -327,11 +327,205 @@ def admin_dashboard(request):
             })
 
         # Recent Activity
-        """ Continue to build for tomorrow """
+        recent_attendance = Attendance.objects.filter(date = today).select_related('student', 'bus').order_by('-recorded_at')[:10]
+        recent_payments = Payment.objects.all().select_related('fee', 'fee__student', 'recorded_by').order_by('-payment_date')[:10]
 
+        # Chart data (LAST 7 Days)
+        chart_data = []
+
+        for i in range(6, -1, -1):
+            chart_date = today - timedelta(days = i)
+            day_attendance = Attendance.objects.filter(date = chart_date)
+            chart_data.append({
+                'date': chart_date.strftime('%b %d'),
+                'present': day_attendance.filter(status__in = ['picked_up', 'dropped_off']).count(),
+                'absent': day_attendance.filter(status = 'absent').count()
+            })
+
+        # Weekly financial
+        weekly_payments = Payment.objects.filter(payment_date__gte = start_of_week).aggregate(total = Sum('amount'))['total'] or Decimal('0.00')
+        monthly_payments = Payment.objects.filter(payment_date__gte = start_of_month).aggregate(total = Sum('amount'))['total'] or Decimal('0.00')
+
+        context = {
+            # Student metrics
+            'total_students': total_students,
+            'total_parents': total_parents,
+            'total_buses': total_buses,
+            'total_assistants': total_assistants,
+
+            # Attendance metrics
+            'students_picked_up': students_picked_up,
+            'students_absent': students_absent,
+            'students_late': students_late,
+            'students_pending': students_pending,
+            'attendance_rate': round(attendance_rate, 1),
+
+            # Financial metrics
+            'total_fee_amount': total_fee_amount,
+            'total_collected': total_collected,
+            'total_outstanding': total_outstanding,
+            'overdue_count': overdue_count,
+            'overdue_amount': overdue_amount,
+            'collection_rate': round(collection_rate, 1),
+            'weekly_payments': weekly_payments,
+            'monthly_payments': monthly_payments,
+
+            # Bus stats
+            'bus_stats': bus_stats,
+            'buses_at_capacity': buses_at_capacity,
+
+            # Alerts
+            'alerts': alerts,
+            'alert_count': len(alerts),
+
+            # Recent activity
+            'recent_attendance': recent_attendance,
+            'recent_payments': recent_payments,
+
+            # Charts
+            'chart_data': chart_data,
+
+
+            # Date info
+            'today': today,
+            'now': timezone.now(),
+        }
 
     else:
         return render (request, 'transport/admin_dashboard.html')
+
+
+@login_required
+def reports_hub(request):
+    """ Central hub for all reports """
+    if request.user.user_type != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('index')
+
+    reports = [
+        {
+            'id': 'students',
+            'title': 'Student Report',
+            'description': 'Complete student roster with bus assignments ad parent info',
+            'icon': 'bi-people',
+            'color': 'primary',
+            'url': 'report_students',
+        },
+        {
+            'id': 'attendance',
+            'title': 'Attendance Report',
+            'description': 'Daily attendance with filtering by date, bus and status',
+            'icon': 'bi-clipboard-check',
+            'color': 'success',
+            'url': 'attendance_reports',
+        },
+        {
+            'id': 'fees',
+            'title': 'Fee Report',
+            'description': 'Fee collection summary with filters for term, year and bus',
+            'icon': 'bi-credit-card',
+            'color': 'warning',
+            'url': 'fee_report',
+        },
+        {
+            'id': 'buses',
+            'title': 'Bus Roster',
+            'description': 'Students assigned to each bus with capacity utilization',
+            'icon': 'bi-bus-front',
+            'color': 'info',
+            'url': 'report_bus_roster',
+        },
+        {
+            'id': 'parents',
+            'title': 'Parent Contacts',
+            'description': 'Emergency contact list for all parents',
+            'icon': 'bi-person-lines-fill',
+            'color': 'secondary',
+            'url': 'report_parent_contacts',
+        },
+        {
+            'id': 'performance',
+            'title': 'Performance Report',
+            'description': 'Attendance trends, fee collection, and bus utilization',
+            'icon': 'bi-graph-up',
+            'color': 'danger',
+            'url': 'report_performance',
+        },
+        {
+            'id': 'audit',
+            'title': 'Audit Log',
+            'description': 'System activity and admin actions',
+            'icon': 'bi-journal-text',
+            'color': 'dark',
+            'url': 'report_audit_log',
+        }
+    ]
+
+    context = {
+        'reports': reports,
+    }
+
+    return render(request, 'transport/reports_hub.html', context)
+
+
+@login_required
+def report_students(request):
+    """  Student report with filtering and export """
+    if request.ser.user_type != 'admin':
+        messages.error(request, 'Access denied.')
+        return redirect('index')
+
+    students = Student.objects.filter(is_active = True).select_related('parent', 'bus')
+
+    # Filters
+    grade = request.GET.get('grade', '')
+    bus_id = request.GET.get('bus', '')
+    search = request.GET.get('search', '')
+
+    if grade:
+        students = students.filter(grade = grade)
+    if bus_id:
+        students = students.filter(bus_id = bus_id)
+    if search:
+        students.filter(
+            Q(name__icontains = search) | Q(parent__name__icontains = search)
+        )
+
+    students = students.order_by('grade', 'name')
+
+    # Get unique grades
+    all_grades = Student.objects.filter(is_active = True).values_list(
+        'grade', flat = True
+    ).distinct().order_by('grade')
+
+    # Pagination
+    paginator = Paginator(students, 50)
+    page = request.GET.get('page', 1)
+    students_page = paginator.get_page(page)
+
+    # Export handler
+    if request.GET.get('export') == 'csv':
+        return _export_students_csv(students)
+
+    context = {
+        'students': students_page,
+        'total_students': students.count(),
+        'grades': all_grades,
+        'buses': Bus.objects.filter(is_active = True),
+        'selected_grade': grade,
+        'selected_bus': bus_id,
+        'search': search,
+    }
+
+    return render(request, 'transport/report_students.html', context)
+
+
+def _export_students_csv(studnets):
+    """ Export students to csv """
+    pass
+    # Continue with code from here !!!!!!!!!!!!
+
+
 
 
 @login_required

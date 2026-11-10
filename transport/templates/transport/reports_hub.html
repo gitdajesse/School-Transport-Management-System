@@ -1,0 +1,54 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Reports Hub{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title mb-0">
+                <i class="bi bi-file-earmark-text"></i> Reports Hub
+            </h1>
+            <p class="text-muted mb-0">Generate and export detailed reports</p>
+        </div>
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Reports Grid -->
+    <div class="row g-4">
+        {% for report in reports %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card card-shadow h-100 border-{{ report.color }}">
+                    <div class="card-body text-center">
+                        <div class="display-4 text-{{ report.color }} mb-3">
+                            <i class="bi {{ report.icon }}"></i>
+                        </div>
+                        <h5 class="card-title">{{ report.title }}</h5>
+                        <p class="card-text text-muted small">{{ report.description }}</p>
+                        <a href="{% url report.url %}" class="btn btn-{{ report.color }} mt-2">
+                            <i class="bi bi-file-earmark-text"></i> Open Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Info Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <h6 class="alert-heading">
+                    <i class="bi bi-info-circle"></i> About Reports
+                </h6>
+                <ul class="mb-0">
+                    <li>All reports support <strong>CSV export</strong> for use in Excel or Google Sheets.</li>
+                    <li>Use filters to narrow down results by date, bus, grade, or status.</li>
+                    <li>Reports are generated <strong>in real-time</strong> — always current.</li>
+                    <li>Print-friendly views are available for sharing with staff.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

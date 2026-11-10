@@ -1,0 +1,153 @@
+{% extends 'transport/layout.html' %}
+
+{% block title %}Student Report{% endblock %}
+
+{% block body %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="page-title mb-0">
+                <i class="bi bi-people"></i> Student Report
+            </h1>
+            <p class="text-muted mb-0">
+                {{ total_students }} students matching filters
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'reports_hub' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <a href="?export=csv{% if selected_grade %}&grade={{ selected_grade }}{% endif %}{% if selected_bus %}&bus={{ selected_bus }}{% endif %}{% if search %}&search={{ search }}{% endif %}"
+               class="btn btn-success">
+                <i class="bi bi-download"></i> Export CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card card-shadow mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Grade</label>
+                    <select name="grade" class="form-select">
+                        <option value="">All Grades</option>
+                        {% for grade in grades %}
+                            <option value="{{ grade }}" {% if selected_grade == grade %}selected{% endif %}>
+                                Grade {{ grade }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Bus</label>
+                    <select name="bus" class="form-select">
+                        <option value="">All Buses</option>
+                        {% for bus in buses %}
+                            <option value="{{ bus.id }}" {% if selected_bus == bus.id|stringformat:"s" %}selected{% endif %}>
+                                {{ bus.registration }} - {{ bus.route_name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Search</label>
+                    <input type="text" name="search" class="form-control"
+                           placeholder="Name or parent..." value="{{ search }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student List -->
+    <div class="card card-shadow">
+        <div class="card-body p-0">
+            {% if students %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Student</th>
+                                <th>Grade</th>
+                                <th>Parent</th>
+                                <th>Phone</th>
+                                <th>Bus</th>
+                                <th>Route</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                                <tr>
+                                    <td>{{ forloop.counter|add:students.start_index|add:"-1" }}</td>
+                                    <td>
+                                        <strong>{{ student.name }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">Grade {{ student.grade }}</span>
+                                    </td>
+                                    <td>{{ student.parent.name|default:"—" }}</td>
+                                    <td>{{ student.parent.phone_number|default:"—" }}</td>
+                                    <td>
+                                        {% if student.bus %}
+                                            <span class="badge bg-info">{{ student.bus.registration }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">None</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ student.bus.route_name|default:"—" }}</td>
+                                    <td>
+                                        <a href="{% url 'student_detail' student.id %}"
+                                           class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-people display-1 text-muted"></i>
+                    <h5 class="mt-3">No Students Found</h5>
+                    <p class="text-muted">Try adjusting your filters.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if students.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if students.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ students.previous_page_number }}{% if selected_grade %}&grade={{ selected_grade }}{% endif %}{% if selected_bus %}&bus={{ selected_bus }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                            Previous
+                        </a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link">
+                        {{ students.number }} / {{ students.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if students.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ students.next_page_number }}{% if selected_grade %}&grade={{ selected_grade }}{% endif %}{% if selected_bus %}&bus={{ selected_bus }}{% endif %}{% if search %}&search={{ search }}{% endif %}">
+                            Next
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% endblock %}

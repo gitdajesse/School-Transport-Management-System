@@ -93,6 +93,12 @@ urlpatterns = [
     path('fees/waive/<int:fee_id>/', views.waive_fee, name = 'waive_fee'),
 
     # API endpoints
-    path('api/check-fee-status/', views.check_student_fee_status, name = 'check_student_fee_status')
+    path('api/check-fee-status/', views.check_student_fee_status, name = 'check_student_fee_status'),
+
+    # Reports hub
+    path('reports/', views.reports_hub, name = 'report_hub'),
+
+    # Individual reports
+    path('reports/students/', views.report_students, name = 'report_students'),
 ]
 
